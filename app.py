@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 from fpdf import FPDF
 import base64
+from pathlib import Path
+import streamlit.components.v1 as components
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="NeuroLog Pirngadi", page_icon="🧠", layout="centered")
@@ -79,7 +81,7 @@ def create_pdf(data):
     return pdf.output(dest='S').encode('latin-1')
 
 # --- TAB NAVIGASI ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["👤 Identitas", "🧠 NIHSS (Stroke)", "⚡ NRS (Nyeri)", "🎗️ KPS (Tumor)", "📊 Resume & PDF"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["👤 Identitas", "🧠 NIHSS (Stroke)", "⚡ NRS (Nyeri)", "🎗️ KPS (Tumor)", "📊 Resume & PDF", "🦴 Atlas SIJ"])
 
 # --- TAB 1: IDENTITAS ---
 with tab1:
@@ -204,3 +206,13 @@ with tab5:
                 file_name=f"Laporan_{no_rm}_{datetime.now().strftime('%Y%m%d')}.pdf",
                 mime='application/pdf'
             )
+
+# --- TAB 6: ATLAS INJEKSI SIJ ---
+with tab6:
+    st.header("Atlas Injeksi Sendi Sakroiliaka")
+    st.caption("Klik titik injeksi: klik pertama = gambaran USG, klik kedua = diagram anatomi berwarna.")
+    atlas_path = Path(__file__).parent / "assets" / "sij_injection_atlas.html"
+    if atlas_path.exists():
+        components.html(atlas_path.read_text(encoding="utf-8"), height=1900, scrolling=True)
+    else:
+        st.error("File assets/sij_injection_atlas.html tidak ditemukan.")

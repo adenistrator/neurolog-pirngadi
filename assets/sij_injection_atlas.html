@@ -1,0 +1,443 @@
+<title>Atlas Injeksi SIJ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: two-pane clinical workstation — posterior pelvis model on the left, scan/diagram viewer on the right, procedure card below. */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --ink:#15211f; --muted:#56635f; --line:#d3dbd8; --accent:#0d766e; --accent-ink:#ffffff;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  /* tissue palette (anatomy view + model) */
+  --c-skin:#e2a98a; --c-fat:#f0cf6a; --c-muscle:#c9554e; --c-muscle-line:#a8403a; --c-fascia:#f7efe6;
+  --c-sacrum:#ece2c9; --c-sacrum-edge:#8a7b5c; --c-ilium:#b9a6e0; --c-ilium-edge:#6d5a99;
+  --c-joint:#2e8bd0; --c-foramen:#3b3355; --c-lig:#2f9a5a; --c-nerve:#f08c1a; --c-needle:#56616a;
+  --warn:#a5520c;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d1312; --surface:#151d1c; --ink:#e3ebe8; --muted:#94a39f; --line:#26312f; --accent:#39b3a6; --accent-ink:#06201d;
+  --c-skin:#c98f72; --c-fat:#cdab4c; --c-muscle:#a8443e; --c-muscle-line:#8a3530; --c-fascia:#e6dccf;
+  --c-sacrum:#d8cba8; --c-sacrum-edge:#6b5e45; --c-ilium:#9c87c9; --c-ilium-edge:#4f3f7a;
+  --c-joint:#4ba3e3; --c-foramen:#2a243f; --c-lig:#3fb06c; --c-nerve:#f5a03c; --c-needle:#cfd6da;
+  --warn:#f0a35a; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0d1312; --surface:#151d1c; --ink:#e3ebe8; --muted:#94a39f; --line:#26312f; --accent:#39b3a6; --accent-ink:#06201d;
+  --c-skin:#c98f72; --c-fat:#cdab4c; --c-muscle:#a8443e; --c-muscle-line:#8a3530; --c-fascia:#e6dccf;
+  --c-sacrum:#d8cba8; --c-sacrum-edge:#6b5e45; --c-ilium:#9c87c9; --c-ilium-edge:#4f3f7a;
+  --c-joint:#4ba3e3; --c-foramen:#2a243f; --c-lig:#3fb06c; --c-nerve:#f5a03c; --c-needle:#cfd6da;
+  --warn:#f0a35a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:4px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0;letter-spacing:.01em;text-wrap:balance}
+.lede{color:var(--muted);margin:0;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 13px/1 var(--f-body);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.chip b{font-family:var(--f-mono);font-size:11px;background:var(--ink);color:var(--surface);padding:3px 6px;border-radius:6px}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip[aria-pressed="true"] b{background:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.seg button:focus-visible,.mk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:18px;align-items:start}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+.pane{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0;display:grid;gap:10px}
+.pane-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pane-h h2{font-family:var(--f-display);font-weight:600;font-size:20px;margin:0;letter-spacing:.02em}
+.hint{font-size:12.5px;color:var(--muted)}
+svg{display:block;width:100%;height:auto}
+.mk{cursor:pointer}
+.mk circle.dot{fill:var(--ink);stroke:var(--surface);stroke-width:2;transition:r .15s}
+.mk text{fill:var(--surface);font:700 8.5px var(--f-mono);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.mk line{stroke:var(--ink);stroke-width:1.2;stroke-dasharray:2 2}
+.mk:hover circle.dot{r:13}
+.mk.on circle.dot{fill:var(--accent)}
+.mk.on text{fill:var(--accent-ink)}
+.mk.on line{stroke:var(--accent)}
+.probe{fill:var(--accent);fill-opacity:.22;stroke:var(--accent);stroke-width:1.5}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:600 13px var(--f-body);padding:7px 14px;border:0;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.viewer{border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.viewer.us{background:#000;border-color:#000}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.caption{font-size:12.5px;color:var(--muted);margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:12px}
+.card-h{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.card-h .code{font:700 13px var(--f-mono);background:var(--accent);color:var(--accent-ink);padding:5px 9px;border-radius:6px}
+.card-h h3{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;letter-spacing:.01em}
+.target{margin:0;font-size:15px}
+dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 22px;margin:0}
+dl div{min-width:0;border-top:1px solid var(--line);padding-top:8px}
+dt{font:600 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+dd{margin:0}
+dd.warn{color:var(--warn)}
+.refs{font-size:13px;color:var(--muted)}
+.refs h2{font-family:var(--f-display);font-weight:600;font-size:18px;color:var(--ink);margin:0 0 6px}
+.refs ol{margin:0;padding-left:20px;display:grid;gap:3px}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Neuro-pain · Intervensi terpandu USG</div>
+    <h1>Atlas Injeksi Sendi Sakroiliaka</h1>
+    <p class="lede">Pilih titik injeksi di model pelvis. Klik pertama menampilkan gambaran USG, klik kedua pada titik yang sama menampilkan diagram anatomi berwarna pada bidang potong yang sama.</p>
+  </header>
+
+  <nav class="chips" id="chips" aria-label="Pilih titik injeksi"></nav>
+
+  <div class="grid">
+    <section class="pane" aria-label="Model pelvis posterior">
+      <div class="pane-h"><h2>Pelvis, pandangan posterior</h2><span class="hint">Pasien prone · kotak hijau = posisi probe</span></div>
+      <svg id="model" viewBox="0 0 400 360" role="group" aria-label="Model pelvis posterior dengan titik injeksi">
+        <defs>
+          <g id="ilium-shape">
+            <path d="M138,92 C118,68 78,42 42,52 C16,64 8,118 22,168 C34,210 60,246 92,262 L104,300 C112,330 130,345 150,340 C160,335 158,318 150,305 C140,290 135,275 150,258 C158,250 163,244 166,238 C150,190 136,140 138,92 Z" fill="var(--c-ilium)" stroke="var(--c-ilium-edge)" stroke-width="1.4"/>
+            <path d="M42,52 C78,42 118,68 138,92" fill="none" stroke="var(--c-ilium-edge)" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+            <ellipse cx="134" cy="150" rx="7" ry="10" fill="var(--c-ilium)" stroke="var(--c-ilium-edge)" stroke-width="1.2"/>
+          </g>
+        </defs>
+        <!-- L5 -->
+        <path d="M160,50 L108,44 L106,58 L158,66 Z M240,50 L292,44 L294,58 L242,66 Z" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)" stroke-width="1.2"/>
+        <path d="M156,44 Q200,34 244,44 L248,72 Q200,80 152,72 Z" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)" stroke-width="1.2"/>
+        <rect x="192" y="20" width="16" height="44" rx="6" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)" stroke-width="1.2"/>
+        <text x="200" y="14" text-anchor="middle" font-family="var(--f-mono)" font-size="9" fill="var(--muted)">L5</text>
+        <!-- ilia -->
+        <use href="#ilium-shape"/>
+        <use href="#ilium-shape" transform="translate(400,0) scale(-1,1)"/>
+        <!-- sacrum -->
+        <path d="M138,90 C160,84 240,84 262,90 C266,140 252,200 226,262 C216,284 206,298 200,300 C194,298 184,284 174,262 C148,200 134,140 138,90 Z" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)" stroke-width="1.4"/>
+        <ellipse cx="176" cy="88" rx="9" ry="6" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)"/>
+        <ellipse cx="224" cy="88" rx="9" ry="6" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)"/>
+        <path d="M193,302 C195,315 198,330 200,338 C202,330 205,315 207,302 Z" fill="var(--c-sacrum)" stroke="var(--c-sacrum-edge)"/>
+        <path d="M200,96 L200,268" stroke="var(--c-sacrum-edge)" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+        <path d="M194,276 Q200,288 206,276 Z" fill="var(--c-foramen)"/>
+        <g fill="var(--c-foramen)">
+          <ellipse cx="172" cy="115" rx="7" ry="5"/><ellipse cx="228" cy="115" rx="7" ry="5"/>
+          <ellipse cx="176" cy="155" rx="6.5" ry="4.5"/><ellipse cx="224" cy="155" rx="6.5" ry="4.5"/>
+          <ellipse cx="181" cy="193" rx="6" ry="4"/><ellipse cx="219" cy="193" rx="6" ry="4"/>
+          <ellipse cx="187" cy="228" rx="5" ry="3.5"/><ellipse cx="213" cy="228" rx="5" ry="3.5"/>
+        </g>
+        <!-- SI joints -->
+        <path d="M138,92 C136,140 148,200 166,238" fill="none" stroke="var(--c-joint)" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M262,92 C264,140 252,200 234,238" fill="none" stroke="var(--c-joint)" stroke-width="3.2" stroke-linecap="round"/>
+        <!-- LDL -->
+        <path d="M134,158 C142,182 156,206 172,226" fill="none" stroke="var(--c-lig)" stroke-width="4" stroke-linecap="round" opacity=".85"/>
+        <g font-family="var(--f-mono)" font-size="8.5" fill="var(--muted)">
+          <text x="40" y="100">ILIUM</text>
+          <text x="200" y="250" text-anchor="middle">SAKRUM</text>
+          <text x="150" y="172" text-anchor="end">PSIS</text>
+          <text x="200" y="352" text-anchor="middle">koksigis</text>
+        </g>
+        <g id="probeLayer"></g>
+        <g id="markerLayer"></g>
+      </svg>
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:var(--c-sacrum)"></i>Sakrum / L5</span>
+        <span><i style="background:var(--c-ilium)"></i>Ilium</span>
+        <span><i style="background:var(--c-joint)"></i>Garis SIJ</span>
+        <span><i style="background:var(--c-lig)"></i>LDL</span>
+        <span><i style="background:var(--c-foramen)"></i>Foramen sakral</span>
+      </div>
+    </section>
+
+    <section class="pane" aria-label="Penampil USG dan anatomi">
+      <div class="pane-h">
+        <h2 id="viewTitle">Gambaran USG</h2>
+        <div class="seg" role="group" aria-label="Mode tampilan">
+          <button id="btnUs" type="button" aria-pressed="true">USG</button>
+          <button id="btnAn" type="button" aria-pressed="false">Anatomi</button>
+        </div>
+      </div>
+      <div id="viewer" class="viewer us"></div>
+      <div id="legend" class="legend"></div>
+      <p class="caption" id="caption"></p>
+    </section>
+  </div>
+
+  <article class="card" id="card" aria-live="polite"></article>
+
+  <p class="note">Gambar USG di sini adalah ilustrasi skematik untuk edukasi (bukan rekaman pasien). Dosis dan volume adalah contoh praktik umum; sesuaikan dengan PPK/SPO RS, status antikoagulan, dan kondisi pasien.</p>
+
+  <section class="refs">
+    <h2>Rujukan</h2>
+    <ol>
+      <li>Harmon D, O'Sullivan M. Ultrasound-guided sacroiliac joint injection technique. <i>Pain Physician</i>. 2008;11(4):543–7.</li>
+      <li>Jee H, et al. Ultrasound-guided versus fluoroscopy-guided sacroiliac joint intra-articular injections in noninflammatory SIJ dysfunction: prospective randomized study. <i>Arch Phys Med Rehabil</i>. 2014;95(2):330–7.</li>
+      <li>Borowsky CD, Fagen G. Sources of sacroiliac region pain: intra- vs combined intra- and peri-articular injection. <i>Arch Phys Med Rehabil</i>. 2008;89(11):2048–56.</li>
+      <li>Vleeming A, et al. The function of the long dorsal sacroiliac ligament. <i>Spine</i>. 1996;21(5):556–62.</li>
+      <li>Cohen SP, et al. Randomized placebo-controlled study evaluating lateral branch radiofrequency denervation for sacroiliac joint pain. <i>Anesthesiology</i>. 2008;109(2):279–88.</li>
+      <li>Dreyfuss P, et al. The ability of multi-site, multi-depth sacral lateral branch blocks to anesthetize the sacroiliac joint complex. <i>Pain Med</i>. 2009;10(4):679–88.</li>
+      <li>Roberts SL, et al. Cadaveric study of sacroiliac joint innervation. <i>Reg Anesth Pain Med</i>. 2014;39(6):456–64.</li>
+      <li>Laslett M, et al. Diagnosis of sacroiliac joint pain: validity of individual provocation tests and composites of tests. <i>Man Ther</i>. 2005;10(3):207–18.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function(){
+const FAN = 'M145,-4.7 A110,110 0 0 0 255,-4.7 L410,263.7 A420,420 0 0 1 -10,263.7 Z';
+const LIN = 'M30,0 H370 V262 H30 Z';
+
+const SITES = [
+ { id:'IA', name:'Injeksi intra-artikular SIJ', chip:'Intra-artikular',
+   probe:'convex', freq:'2–5 MHz', depth:8, plane:'Transversal · setinggi S3–S4', orient:['MEDIAL','LATERAL'],
+   fatB:38, fascia:['M0,38 C120,36 260,40 400,38'],
+   bones:[{k:'S',d:'M0,150 C60,148 120,155 170,175 L192,200 L190,300 L0,300 Z',s:'M0,150 C60,148 120,155 170,175 L192,200'},
+          {k:'I',d:'M214,196 C232,165 282,136 400,122 L400,300 L212,300 Z',s:'M214,196 C232,165 282,136 400,122'}],
+   joint:['M192,200 L214,196 L212,300 L190,300 Z'], foramen:[],
+   lig:['M166,170 C182,176 200,182 226,176 L214,196 L192,200 Z'], nerves:[],
+   target:[203,197], needle:[[52,0],[199,193]],
+   labels:[['Lemak subkutan',392,26,'end'],['M. gluteus maximus',392,84,'end'],['Sakrum',30,215,'start'],['Ilium',385,215,'end'],
+           ['Celah SIJ (sinovial)',236,262,'start',203,240],['Lig. SI posterior',112,124,'end',186,182],['Jarum 22G, in-plane',112,70,'start']],
+   model:{m:[112,240],a:[161,222],probe:[172,214,82,0]},
+   info:{ target:'Sepertiga inferior celah SIJ, bagian yang benar-benar sinovial (setinggi foramen S3–S4).',
+     indikasi:'Nyeri SIJ dengan ≥3 dari 5 tes provokasi positif (distraction, compression, thigh thrust, Gaenslen, sacral thrust). Diagnostik (blok anestesi lokal) maupun terapeutik; sakroiliitis pada spondiloartritis.',
+     probe:'Prone, bantal di bawah perut. Convex transversal di hiatus sakralis, geser ke lateral sampai tepi sakrum, lalu ke kranial sampai tampak celah hipoekoik antara sakrum (medial) dan ilium (lateral).',
+     jarum:'Spinal 22G 3,5", in-plane dari medial ke lateral. Rasakan "give" saat menembus kapsul posterior.',
+     obat:'Total 1–2 mL: bupivakain 0,5% 1 mL + triamsinolon asetonid 40 mg atau metilprednisolon asetat 40 mg. Kapasitas sendi kecil, injeksi terasa resisten bila di intra-artikular.',
+     waspada:'Akurasi USG lebih rendah dari fluoroskopi berkontras (±87% vs ±98%), terutama pada obesitas dan sendi degeneratif. Kebocoran kapsul ventral dapat memblok pleksus lumbosakral (kelemahan tungkai sementara).',
+     bukti:'RCT Jee 2014: akurasi USG 87,3% vs fluoroskopi 98,2%, perbaikan nyeri dan fungsi setara, tanpa radiasi. Teknik dasar: Harmon & O\'Sullivan 2008.' } },
+
+ { id:'PA', name:'Injeksi periartikular SIJ superior', chip:'Periartikular',
+   probe:'convex', freq:'2–5 MHz', depth:8, plane:'Transversal · setinggi S1 / PSIS', orient:['MEDIAL','LATERAL'],
+   fatB:30, fascia:['M0,30 C140,28 260,32 400,30','M232,30 C220,60 205,120 190,172'],
+   bones:[{k:'S',d:'M0,176 C50,172 100,180 150,195 L176,214 L176,300 L0,300 Z',s:'M0,176 C50,172 100,180 150,195 L176,214'},
+          {k:'I',d:'M192,208 C186,170 200,122 240,96 C290,78 350,84 400,90 L400,300 L192,300 Z',s:'M192,208 C186,170 200,122 240,96 C290,78 350,84 400,90'}],
+   joint:['M176,214 L192,208 L192,300 L176,300 Z'], foramen:[],
+   lig:['M150,195 C162,186 176,178 189,172 L192,208 L176,214 Z'], nerves:[],
+   target:[180,199], needle:[[30,0],[177,195]],
+   labels:[['Lemak subkutan',392,22,'end'],['Fasia torakolumbal',392,46,'end'],['M. gluteus maximus',392,72,'end'],['M. multifidus',12,150,'start'],
+           ['PSIS / ilium',385,165,'end'],['Sakrum (S1)',20,232,'start'],['Lig. interoseus + SI posterior',214,244,'start',186,196],['Jarum',62,20,'start']],
+   model:{m:[96,108],a:[137,114],probe:[160,118,82,0]},
+   info:{ target:'Celah SIJ bagian atas setinggi S1, medial PSIS: ligamen sakroiliaka posterior dan interoseus (komponen ekstra-artikular).',
+     indikasi:'Nyeri tepat di sekitar PSIS (Fortin finger test positif), nyeri ligamen pasca-trauma atau hipermobilitas; tambahan untuk injeksi IA bila respons IA saja parsial.',
+     probe:'Convex transversal setinggi S1, mulai dari krista sakral median lalu geser lateral sampai PSIS tampak lebih superfisial dari sakrum.',
+     jarum:'Spinal 22G, in-plane medial ke lateral menembus m. multifidus, ujung jarum di ligamen dorsal di atas celah.',
+     obat:'2–3 mL lidokain 1% atau bupivakain 0,25% + steroid dosis rendah (mis. triamsinolon 20 mg). Alternatif regeneratif: dekstrosa 12,5–25%.',
+     waspada:'Celah atas dalam dan sempit, didominasi ligamen interoseus. Ini bukan jalur yang baik untuk masuk intra-artikular. Gunakan Doppler bila arah jarum menuju lateral-dalam.',
+     bukti:'Borowsky & Fagen 2008: kombinasi injeksi intra- dan periartikular memberi perbaikan nyeri lebih baik daripada intra-artikular saja, mendukung peran ligamen sebagai sumber nyeri.' } },
+
+ { id:'LDL', name:'Injeksi ligamen sakroiliaka dorsal panjang', chip:'Ligamen dorsal (LDL)',
+   probe:'linear', freq:'6–13 MHz', depth:4, plane:'Longitudinal-oblik · PSIS → S3', orient:['KRANIAL','KAUDAL'],
+   fatB:26, fascia:['M0,26 C120,24 260,28 400,26'],
+   bones:[{k:'I',d:'M0,96 C40,90 80,96 110,112 L116,300 L0,300 Z',s:'M0,96 C40,90 80,96 110,112'},
+          {k:'S',d:'M150,160 C220,150 300,141 400,136 L400,300 L150,300 Z',s:'M150,160 C220,150 300,141 400,136'}],
+   joint:['M110,112 L150,160 L150,300 L116,300 Z'], foramen:[],
+   lig:['M44,84 C100,86 140,112 200,128 C260,127 330,123 400,121 L400,132 C330,135 260,140 200,146 C150,142 112,106 56,94 Z'],
+   nerves:[[290,112,8,4.5]],
+   target:[152,123], needle:[[392,0],[156,120]],
+   labels:[['Lemak subkutan',200,19,'middle'],['Aponeurosis m. gluteus maximus',36,60,'start'],['N. kluneal',304,104,'start',296,109],
+           ['LDL',360,168,'end',330,129],['PSIS',40,160,'start'],['Krista sakral lateral (S3)',362,232,'end'],['SIJ (dalam)',133,276,'middle']],
+   model:{m:[96,186],a:[146,190],probe:[142,196,82,77]},
+   info:{ target:'Ligamen sakroiliaka dorsal panjang (LDL), dari PSIS ke krista sakral lateral S3–S4. Nyeri tekan tepat di bawah PSIS.',
+     indikasi:'Nyeri pelvis peripartum/postpartum, nyeri tekan LDL, nyeri SIJ dengan komponen ligamen. Juga untuk hidrodiseksi n. kluneal medius bila dicurigai entrapment.',
+     probe:'Linear frekuensi tinggi, longitudinal-oblik dari PSIS ke arah kaudal-medial. LDL tampak sebagai pita fibrilar hiperekoik di atas celah antara PSIS dan sakrum.',
+     jarum:'25G 1,5–2", in-plane dari kaudal ke kranial. Target di permukaan/peri-ligamen, hindari bolus besar intraligamen.',
+     obat:'1–2 mL anestesi lokal + steroid dosis rendah, atau dekstrosa 15% untuk prolotherapy (biasanya serial 3–4 sesi).',
+     waspada:'N. kluneal medius (cabang lateral S1–S3) melintas dekat LDL. Parestesia saat jarum maju menandakan kontak saraf; tarik sedikit.',
+     bukti:'Vleeming 1996: LDL menegang saat kontranutasi sakrum dan merupakan sumber nyeri yang dapat dipalpasi, terutama pada nyeri pelvis peripartum.' } },
+
+ { id:'LB', name:'Blok cabang lateral S1–S3', chip:'Cabang lateral S1–S3',
+   probe:'convex', freq:'2–5 MHz', depth:7, plane:'Transversal · setinggi foramen S2', orient:['MEDIAL','LATERAL'],
+   fatB:30, fascia:['M0,30 C150,28 260,32 400,30','M232,30 C236,70 236,110 232,148'],
+   bones:[{k:'S',d:'M0,118 C18,108 40,112 60,128 C90,138 120,144 150,150 L150,300 L0,300 Z',s:'M0,118 C18,108 40,112 60,128 C90,138 120,144 150,150'},
+          {k:'S',d:'M180,152 C210,150 240,148 268,150 C285,152 296,160 302,176 L306,300 L180,300 Z',s:'M180,152 C210,150 240,148 268,150 C285,152 296,160 302,176'},
+          {k:'I',d:'M326,182 C340,152 368,132 400,122 L400,300 L322,300 Z',s:'M326,182 C340,152 368,132 400,122'}],
+   joint:['M302,176 L326,182 L322,300 L306,300 Z'], foramen:['M150,150 L180,152 L180,300 L150,300 Z'],
+   lig:[], nerves:[[165,162,6,5],[196,146,7,3.2]],
+   target:[187,147], needle:[[384,0],[191,144]],
+   labels:[['Lemak subkutan',392,22,'end'],['M. multifidus',14,70,'start'],['Krista sakral median',14,96,'start',30,110],['M. gluteus maximus',392,108,'end'],
+           ['Ramus dorsalis S2',112,204,'end',160,166],['Cabang lateral',232,204,'start',200,150],['Foramen S2',165,282,'middle'],['Sakrum',60,252,'middle'],['SIJ',314,282,'middle'],['Ilium',390,236,'end']],
+   model:{m:[306,156],a:[236,156],probe:[232,156,82,0],dots:[[238,115],[232,155],[226,193]]},
+   info:{ target:'Tepi lateral foramen sakral posterior S1, S2, S3, tempat cabang lateral keluar menuju ligamen dorsal SIJ.',
+     indikasi:'Blok diagnostik sebelum ablasi radiofrekuensi (RF) pada nyeri SIJ kronik yang respons terhadap blok tetapi kambuh. Selalu dikombinasikan dengan blok ramus dorsalis L5.',
+     probe:'Convex transversal. Mulai dari krista sakral median, geser lateral sampai garis hiperekoik sakrum "terputus": itulah foramen posterior. Ulangi untuk S1, S2, S3.',
+     jarum:'22–25G 3,5", in-plane lateral ke medial menuju tepi lateral foramen. Multi-site multi-depth: 2–3 titik per level.',
+     obat:'0,2–0,5 mL bupivakain 0,5% per titik (blok diagnostik volume kecil). Respons positif: nyeri turun ≥50–80% selama durasi kerja obat.',
+     waspada:'Jumlah dan lintasan cabang lateral sangat bervariasi (Roberts 2014), jadi satu titik per level sering tidak cukup. Untuk RF, fluoroskopi masih standar acuan.',
+     bukti:'Cohen 2008 (RCT, Anesthesiology): RF cabang lateral L4–S3 lebih unggul dari plasebo hingga 6 bulan. Dreyfuss 2009: blok multi-site multi-depth efektif untuk nyeri ligamen dorsal, kurang efektif untuk nyeri kapsul intra-artikular.' } },
+
+ { id:'L5', name:'Blok ramus dorsalis L5', chip:'Ramus dorsalis L5',
+   probe:'convex', freq:'2–5 MHz', depth:8, plane:'Transversal · setinggi L5–S1', orient:['MEDIAL','LATERAL'],
+   fatB:26, fascia:['M0,26 C140,24 260,28 400,26'],
+   bones:[{k:'S',d:'M0,78 L22,80 L32,168 C50,174 72,170 94,164 C108,142 124,134 140,146 C150,170 160,198 176,204 C214,200 260,198 302,204 C332,208 362,212 400,200 L400,300 L0,300 Z',
+           s:'M0,78 L22,80 L32,168 C50,174 72,170 94,164 C108,142 124,134 140,146 C150,170 160,198 176,204 C214,200 260,198 302,204 C332,208 362,212 400,200'}],
+   joint:[], foramen:[], lig:[], nerves:[[176,197,6,4]],
+   target:[171,197], needle:[[390,0],[178,193]],
+   labels:[['Lemak subkutan',392,19,'end'],['M. multifidus / erector spinae',60,58,'start'],['Prosesus spinosus L5',40,104,'start',18,92],
+           ['SAP S1',98,130,'end',120,138],['Ramus dorsalis L5',150,252,'end',172,203],['Ala sakrum',320,244,'middle']],
+   model:{m:[306,70],a:[242,90],probe:[236,86,82,0]},
+   info:{ target:'Alur (groove) antara prosesus artikularis superior S1 dan ala sakrum, tempat ramus dorsalis L5 menyilang.',
+     indikasi:'Bagian dari blok/RF inervasi SIJ posterior (bersama cabang lateral S1–S3). Juga untuk nyeri faset L5–S1.',
+     probe:'Convex transversal setinggi L5–S1. Identifikasi prosesus spinosus, lalu geser lateral: SAP S1 tampak sebagai "bukit" dan ala sakrum sebagai garis datar di lateralnya.',
+     jarum:'22G 3,5", in-plane lateral ke medial sampai kontak tulang di dasar alur.',
+     obat:'≤0,5 mL bupivakain 0,5% untuk blok diagnostik.',
+     waspada:'Volume >0,5 mL menurunkan spesifisitas karena menyebar ke foramen L5 atau ventral. Hati-hati pada sakralisasi/transisi lumbosakral; konfirmasi level.',
+     bukti:'Inervasi posterior SIJ berasal dari ramus dorsalis L5 dan cabang lateral S1–S3 (Roberts 2014), sehingga target ini selalu diikutkan pada protokol RF SIJ (Cohen 2008).' } }
+];
+
+const TYPE_NAME = {skin:'Kulit',fat:'Lemak subkutan',muscle:'Otot',fascia:'Fasia',S:'Sakrum / vertebra',I:'Ilium',joint:'Celah sendi (SIJ)',foramen:'Foramen sakral',lig:'Ligamen',nerve:'Saraf',needle:'Jarum',target:'Target'};
+const TYPE_VAR = {skin:'--c-skin',fat:'--c-fat',muscle:'--c-muscle',fascia:'--c-fascia',S:'--c-sacrum',I:'--c-ilium',joint:'--c-joint',foramen:'--c-foramen',lig:'--c-lig',nerve:'--c-nerve',needle:'--c-needle',target:'--accent'};
+
+let state = {site:'IA', view:'us'};
+const $ = s => document.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+
+function labels(s, mode){
+  const col = mode==='us' ? '#f2e27d' : 'var(--ink)';
+  const halo = mode==='us' ? '#000' : 'var(--surface)';
+  let out = '';
+  s.labels.forEach(([t,x,y,anc,ax,ay])=>{
+    if(ax!=null){ const ex = anc==='end'? x+3 : anc==='start'? x-3 : x; out += `<line x1="${ax}" y1="${ay}" x2="${ex}" y2="${y-3}" stroke="${col}" stroke-width="1" opacity=".9"/><circle cx="${ax}" cy="${ay}" r="1.8" fill="${col}"/>`; }
+    out += `<text x="${x}" y="${y}" text-anchor="${anc}" fill="${col}" stroke="${halo}" stroke-width="3" paint-order="stroke" font-family="var(--f-mono)" font-size="10">${t}</text>`;
+  });
+  return out;
+}
+
+function usSVG(s, i){
+  const fov = s.probe==='linear'? LIN : FAN;
+  const f = s.fatB;
+  let g = `<rect width="400" height="300" fill="#3a3a3a"/><rect width="400" height="300" fill="url(#stri${i})"/>`;
+  g += `<rect width="400" height="${f}" fill="#1b1b1b"/>`;
+  g += `<path d="M0,${f*.45} C90,${f*.35} 200,${f*.6} 400,${f*.4}" stroke="#555" stroke-width="1" fill="none"/>`;
+  g += `<rect width="400" height="5" fill="#cfcfcf"/>`;
+  g += `<rect width="400" height="300" fill="#fff" filter="url(#speck${i})" opacity=".42"/>`;
+  s.joint.forEach(d=> g += `<path d="${d}" fill="#0b0b0b"/>`);
+  s.foramen.forEach(d=> g += `<path d="${d}" fill="#151515"/>`);
+  s.bones.forEach(b=> g += `<path d="${b.d}" fill="#030303"/>`);
+  s.lig.forEach(d=> g += `<path d="${d}" fill="#8f8f8f" opacity=".85"/><path d="${d}" fill="url(#stri${i})"/>`);
+  s.nerves.forEach(([x,y,rx,ry])=> g += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#1e1e1e" stroke="#cfcfcf" stroke-width="1.4"/>`);
+  s.fascia.forEach(d=> g += `<path d="${d}" stroke="#a8a8a8" stroke-width="1.6" fill="none"/>`);
+  s.bones.forEach(b=> g += `<path d="${b.s}" stroke="#fbfbf3" stroke-width="3.6" fill="none" stroke-linejoin="round" filter="url(#glow${i})"/>`);
+  const [[x1,y1],[x2,y2]] = s.needle;
+  g += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="2.2" stroke-linecap="round" filter="url(#glow${i})"/>`;
+  g += `<circle cx="${s.target[0]}" cy="${s.target[1]}" r="10" fill="none" stroke="#f2e27d" stroke-width="1.4" stroke-dasharray="3 3"/>`;
+  let ticks = '';
+  for(let k=0;k<=s.depth;k++){ const y = k*262/s.depth; ticks += `<line x1="${k%2?392:388}" x2="398" y1="${y}" y2="${y}" stroke="#9a9a9a"/>` + (k%2===0 && k>0 ? `<text x="386" y="${y+3}" text-anchor="end" font-size="8" fill="#9a9a9a" font-family="var(--f-mono)">${k}</text>` : ''); }
+  return `<svg viewBox="0 -22 400 322" role="img" aria-label="Ilustrasi USG ${s.name}">
+    <defs>
+      <clipPath id="fov${i}"><path d="${fov}"/></clipPath>
+      <pattern id="stri${i}" width="400" height="9" patternUnits="userSpaceOnUse"><path d="M0,4 Q100,2 200,5 T400,4" stroke="#5c5c5c" stroke-width="1" fill="none"/></pattern>
+      <filter id="speck${i}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9 1.7" numOctaves="2" seed="${i*7+3}"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.5 0 0 0 -0.6"/></filter>
+      <filter id="glow${i}" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect x="0" y="-22" width="400" height="322" fill="#000"/>
+    <text x="6" y="-8" font-family="var(--f-mono)" font-size="8.5" fill="#bdbdbd">SIJ·${s.id}  ${s.probe==='linear'?'Linear':'Convex'} ${s.freq}  D ${s.depth} cm</text>
+    <text x="394" y="-8" text-anchor="end" font-family="var(--f-mono)" font-size="8.5" fill="#bdbdbd">${s.plane.split(' · ')[0]}</text>
+    <g clip-path="url(#fov${i})">${g}</g>
+    ${ticks}
+    <text x="${s.probe==='linear'?36:150}" y="14" font-family="var(--f-mono)" font-size="8" fill="#7fd1ff" stroke="#000" stroke-width="2.5" paint-order="stroke">${s.orient[0]}</text>
+    <text x="${s.probe==='linear'?364:250}" y="14" text-anchor="end" font-family="var(--f-mono)" font-size="8" fill="#7fd1ff" stroke="#000" stroke-width="2.5" paint-order="stroke">${s.orient[1]}</text>
+    ${labels(s,'us')}
+  </svg>`;
+}
+
+function anSVG(s){
+  const v = k => `var(${TYPE_VAR[k]})`;
+  const f = s.fatB;
+  let g = `<rect width="400" height="300" fill="${v('muscle')}"/>`;
+  for(let y=f+10;y<300;y+=12) g += `<path d="M0,${y} Q100,${y-3} 200,${y+1} T400,${y}" stroke="var(--c-muscle-line)" stroke-width="1" fill="none" opacity=".6"/>`;
+  g += `<rect width="400" height="${f}" fill="${v('fat')}"/><rect width="400" height="6" fill="${v('skin')}"/>`;
+  s.fascia.forEach(d=> g += `<path d="${d}" stroke="${v('fascia')}" stroke-width="2" fill="none"/>`);
+  s.bones.forEach(b=>{ const edge = b.k==='I' ? 'var(--c-ilium-edge)' : 'var(--c-sacrum-edge)'; g += `<path d="${b.d}" fill="${v(b.k)}"/><path d="${b.s}" stroke="${edge}" stroke-width="2.4" fill="none" stroke-linejoin="round"/>`; });
+  s.joint.forEach(d=> g += `<path d="${d}" fill="${v('joint')}"/>`);
+  s.foramen.forEach(d=> g += `<path d="${d}" fill="${v('foramen')}"/>`);
+  s.lig.forEach(d=> g += `<path d="${d}" fill="${v('lig')}" stroke="rgba(0,0,0,.25)" stroke-width=".8"/>`);
+  s.nerves.forEach(([x,y,rx,ry])=> g += `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${v('nerve')}" stroke="rgba(0,0,0,.35)" stroke-width="1"/>`);
+  const [[x1,y1],[x2,y2]] = s.needle;
+  const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), hx=x1-dx/L*26, hy=y1-dy/L*26;
+  const probe = s.probe==='linear'
+    ? `<rect x="110" y="-24" width="180" height="18" rx="3" fill="var(--ink)"/><text x="200" y="-12" text-anchor="middle" font-family="var(--f-mono)" font-size="8.5" fill="var(--surface)">PROBE LINEAR ${s.freq}</text>`
+    : `<path d="M140,-26 H260 V-12 Q200,2 140,-12 Z" fill="var(--ink)"/><text x="200" y="-15" text-anchor="middle" font-family="var(--f-mono)" font-size="8.5" fill="var(--surface)">PROBE CONVEX ${s.freq}</text>`;
+  return `<svg viewBox="0 -34 400 334" role="img" aria-label="Diagram anatomi ${s.name}">
+    <rect x="0" y="-34" width="400" height="334" fill="var(--surface)"/>
+    ${g}
+    <circle cx="${s.target[0]}" cy="${s.target[1]}" r="10" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 2.5"/>
+    <line x1="${hx}" y1="${hy}" x2="${x2}" y2="${y2}" stroke="${v('needle')}" stroke-width="2.4" stroke-linecap="round"/>
+    <circle cx="${hx}" cy="${hy}" r="3.5" fill="${v('needle')}"/>
+    ${probe}
+    <text x="4" y="-4" font-family="var(--f-mono)" font-size="8" fill="var(--muted)">${s.orient[0]}</text>
+    <text x="396" y="-4" text-anchor="end" font-family="var(--f-mono)" font-size="8" fill="var(--muted)">${s.orient[1]}</text>
+    ${labels(s,'an')}
+  </svg>`;
+}
+
+function legendFor(s){
+  const ks = ['skin','fat','muscle'];
+  if(s.fascia.length) ks.push('fascia');
+  [...new Set(s.bones.map(b=>b.k))].forEach(k=>ks.push(k));
+  if(s.joint.length) ks.push('joint');
+  if(s.foramen.length) ks.push('foramen');
+  if(s.lig.length) ks.push('lig');
+  if(s.nerves.length) ks.push('nerve');
+  ks.push('needle','target');
+  return ks.map(k=>`<span><i style="background:var(${TYPE_VAR[k]})${k==='target'?';background:transparent;border:2px dashed var(--accent)':''}"></i>${TYPE_NAME[k]}</span>`).join('');
+}
+
+function buildChips(){
+  $('#chips').innerHTML = SITES.map(s=>`<button class="chip" type="button" id="chip-${s.id}" data-id="${s.id}" aria-pressed="false"><b>${s.id}</b>${s.chip}</button>`).join('');
+  $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(b) select(b.dataset.id); });
+}
+
+function buildMarkers(){
+  const layer = $('#markerLayer');
+  layer.innerHTML = SITES.map(s=>{ const [mx,my]=s.model.m, [ax,ay]=s.model.a;
+    return `<g class="mk" data-id="${s.id}" tabindex="0" role="button" aria-label="${s.name}">
+      <line x1="${mx}" y1="${my}" x2="${ax}" y2="${ay}"/><circle cx="${ax}" cy="${ay}" r="2.5" fill="var(--ink)"/>
+      <circle class="dot" cx="${mx}" cy="${my}" r="11"/><text x="${mx}" y="${my}">${s.id}</text></g>`; }).join('');
+  layer.addEventListener('click', e=>{ const g=e.target.closest('.mk'); if(g) select(g.dataset.id); });
+  layer.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ const g=e.target.closest('.mk'); if(g){ e.preventDefault(); select(g.dataset.id);} } });
+}
+
+function select(id){
+  if(id===state.site) state.view = state.view==='us' ? 'an' : 'us';
+  else { state.site=id; state.view='us'; }
+  render();
+}
+function setView(v){ state.view=v; render(); }
+
+function render(){
+  const i = SITES.findIndex(s=>s.id===state.site), s = SITES[i];
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed', c.dataset.id===s.id));
+  document.querySelectorAll('.mk').forEach(m=>m.classList.toggle('on', m.dataset.id===s.id));
+  const [cx,cy,w,rot] = s.model.probe;
+  $('#probeLayer').innerHTML = `<rect class="probe" x="${cx-w/2}" y="${cy-8}" width="${w}" height="16" rx="5" transform="rotate(${rot} ${cx} ${cy})"/>` +
+    (s.model.dots||[]).map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4.5" fill="none" stroke="var(--accent)" stroke-width="2"/>`).join('');
+  const us = state.view==='us';
+  $('#btnUs').setAttribute('aria-pressed', us); $('#btnAn').setAttribute('aria-pressed', !us);
+  $('#viewTitle').textContent = us ? 'Gambaran USG' : 'Diagram anatomi';
+  const vw = $('#viewer'); vw.className = 'viewer ' + (us?'us':'an');
+  vw.innerHTML = us ? usSVG(s,i) : anSVG(s);
+  $('#legend').innerHTML = us ? '' : legendFor(s);
+  $('#legend').hidden = us;
+  $('#caption').textContent = (us
+    ? `${s.plane}. Garis putih terang = permukaan tulang dengan bayangan akustik di bawahnya; lingkaran kuning = target. `
+    : `${s.plane}. Bidang potong sama dengan gambar USG, tiap jaringan diberi warna berbeda. `) + 'Klik penanda yang sama lagi untuk berganti tampilan.';
+  const n = s.info;
+  $('#card').innerHTML = `
+    <div class="card-h"><span class="code">${s.id}</span><h3>${s.name}</h3></div>
+    <p class="target"><strong>Target:</strong> ${n.target}</p>
+    <dl>
+      <div><dt>Indikasi</dt><dd>${n.indikasi}</dd></div>
+      <div><dt>Posisi &amp; probe</dt><dd>${n.probe}</dd></div>
+      <div><dt>Teknik jarum</dt><dd>${n.jarum}</dd></div>
+      <div><dt>Obat (contoh)</dt><dd>${n.obat}</dd></div>
+      <div><dt>Waspada</dt><dd class="warn">${n.waspada}</dd></div>
+      <div><dt>Bukti</dt><dd>${n.bukti}</dd></div>
+    </dl>`;
+}
+
+$('#btnUs').addEventListener('click', ()=>setView('us'));
+$('#btnAn').addEventListener('click', ()=>setView('an'));
+buildChips(); buildMarkers(); render();
+})();
+</script>
