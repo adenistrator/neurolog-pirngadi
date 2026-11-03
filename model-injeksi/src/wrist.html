@@ -1,0 +1,481 @@
+<title>Titik Injeksi Pergelangan Tangan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/*@SHELL@*/
+.lm{font:600 10px var(--f-body);color:var(--ink);background:color-mix(in srgb,var(--surface) 82%,transparent);border:1px dashed var(--muted);border-radius:5px;padding:1px 5px;transform:translateY(-12px)}
+#clipwrap{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);flex:0 0 auto}
+#clip{width:150px;accent-color:var(--accent)}
+.comp-legend{position:absolute;right:max(62px,calc(env(safe-area-inset-right,0px) + 62px));top:8px;z-index:4;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:11.5px;line-height:1.55;pointer-events:none}
+.comp-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.inl .vb{margin-left:4px;vertical-align:1px}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<div class="mi-app" id="app">
+  <header class="mi-head">
+    <div class="mi-title">
+      <div class="mi-eyebrow">CTS · De Quervain · TFCC · tangan kanan</div>
+      <h1>Titik Injeksi Pergelangan Tangan</h1>
+      <p class="mi-sub" id="sub"></p>
+    </div>
+    <div class="mi-head-ctl">
+      <div class="mi-seg lg" role="group" aria-label="Versi model" id="mode">
+        <button type="button" data-m="simple" aria-pressed="true">Sederhana</button>
+        <button type="button" data-m="detail" aria-pressed="false">Detail</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mi-bar">
+    <div class="mi-row" role="group" aria-label="Kelompok titik">
+      <span class="mi-lab">Titik</span>
+      <button type="button" class="mi-chip" data-g="ext" aria-pressed="true"><span class="dot" style="background:#d9622b"></span>Kompartemen ekstensor</button>
+      <button type="button" class="mi-chip" data-g="vol" aria-pressed="true"><span class="dot" style="background:#2f6fd6"></span>Volar / CTS</button>
+      <button type="button" class="mi-chip" data-g="jnt" aria-pressed="true"><span class="dot" style="background:#14946b"></span>Sendi &amp; TFCC</button>
+      <button type="button" class="mi-chip" data-g="lig" aria-pressed="true"><span class="dot" style="background:#8a45b8"></span>Ligamen</button>
+    </div>
+    <div class="mi-row" id="layerbar" role="group" aria-label="Lapisan anatomi"></div>
+    <div class="mi-row" role="group" aria-label="Alat tampilan">
+      <span class="mi-lab">Alat</span>
+      <div class="mi-seg" id="lblmode">
+        <button type="button" data-l="code" aria-pressed="true">Kode</button>
+        <button type="button" data-l="name" aria-pressed="false">Nama</button>
+        <button type="button" data-l="off" aria-pressed="false">Mati</button>
+      </div>
+      <button type="button" class="mi-chip" id="tXray" aria-pressed="false">Tulang transparan</button>
+      <button type="button" class="mi-chip" id="tTint" aria-pressed="false">Warnai kompartemen</button>
+      <button type="button" class="mi-chip" id="tClip" aria-pressed="false">Potongan aksial</button>
+      <span id="clipwrap" hidden><span>prok.</span><input type="range" id="clip" min="-3.6" max="2.4" step="0.05" value="-0.8" aria-label="Level potongan aksial"><span>dist.</span><span id="clipmm"></span></span>
+    </div>
+  </div>
+
+  <main class="mi-main">
+    <div class="mi-stage" id="stage">
+      <div class="mi-labels" id="labels"></div>
+      <details class="mi-legend" id="legend">
+        <summary>Legenda</summary>
+        <ul id="legendList"></ul>
+      </details>
+      <div class="comp-legend" id="compLegend" hidden></div>
+      <div class="mi-views" role="group" aria-label="Sudut pandang">
+        <button type="button" data-v="pal">Pal</button>
+        <button type="button" data-v="dor">Dor</button>
+        <button type="button" data-v="rad">Rad</button>
+        <button type="button" data-v="uln">Uln</button>
+      </div>
+      <div class="mi-msg" id="loading">Memuat model…</div>
+      <div class="mi-msg" id="err" hidden>Model 3D butuh WebGL dan koneksi ke cdn.jsdelivr.net. Daftar titik di panel tetap bisa dipakai.</div>
+      <div class="mi-hint">Seret untuk putar · cubit/scroll untuk zoom · jarum tampil saat titik dipilih</div>
+    </div>
+
+    <aside class="mi-panel" aria-label="Detail titik dan sumber">
+      <div class="mi-panel-in">
+        <p class="mi-about" id="about"></p>
+        <article class="mi-card" id="info" aria-live="polite">
+          <h2>Pilih titik</h2>
+          <p class="mi-empty">Ketuk titik berwarna, struktur anatomi, atau pilih dari daftar. Aktifkan “Potongan aksial” untuk irisan tipis (±4 mm) seperti probe USG aksial, lalu geser slider.</p>
+        </article>
+
+        <section class="mi-sec">
+          <h3>Daftar titik</h3>
+          <div class="mi-list" id="list"></div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Enam kompartemen ekstensor</h3>
+          <div class="mi-scroll"><table class="mi-t">
+            <tr><th>K</th><th>Isi</th><th>Kelainan khas</th></tr>
+            <tr><td><b>I</b></td><td>APL, EPB</td><td>De Quervain</td></tr>
+            <tr><td><b>II</b></td><td>ECRL, ECRB</td><td>Sindrom interseksi (persilangan dengan K1)</td></tr>
+            <tr><td><b>III</b></td><td>EPL</td><td>Ruptur EPL pasca fraktur radius distal</td></tr>
+            <tr><td><b>IV</b></td><td>ED, EI (+ PIN di dasar)</td><td>Tenosinovitis ekstensor, ganglion dorsal</td></tr>
+            <tr><td><b>V</b></td><td>EDM</td><td>Di atas DRUJ</td></tr>
+            <tr><td><b>VI</b></td><td>ECU</td><td>Tendinopati/subluksasi ECU (DD TFCC)</td></tr>
+          </table></div>
+          <p class="mi-note">Prinsip umum <span class="vb u">Belum terverifikasi</span> jarum 25–27G; obat masuk di antara tendon dan selubung, bukan intratendon (resistensi tinggi = tarik sedikit); steroid partikulat dosis kecil, hindari deposit subkutan (hipopigmentasi, atrofi lemak); USG + Doppler bila dekat a. radialis/ulnaris.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Status verifikasi</h3>
+          <div class="mi-list" style="gap:6px">
+            <div><span class="vb v">Terverifikasi</span> Dicek ke abstrak/metadata PubMed (3 Nov 2026) dan isinya cocok.</div>
+            <div><span class="vb i">Interpretasi posisi</span> Titik dihitung dari landmark mesh (permukaan tendon setinggi retinakulum ekstensor, celah antar tulang). Bukan koordinat baku.</div>
+            <div><span class="vb g">Anatomi umum</span> Pengetahuan anatomi standar, tidak dicek per klaim.</div>
+            <div><span class="vb u">Belum terverifikasi</span> Tidak ditemukan di abstrak sumber yang dirujuk, termasuk semua sudut, jarak, dan dosis yang tidak disebut di bawah.</div>
+          </div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Rujukan</h3>
+          <ol class="mi-refs">
+            <li>Marshall S, Tardif G, Ashworth N. Local corticosteroid injection for carpal tunnel syndrome. <i>Cochrane Database Syst Rev</i> 2007;(2):CD001554. PMID 17443508. <a href="https://doi.org/10.1002/14651858.CD001554.pub2" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Atroshi I, et al. Methylprednisolone injections for the carpal tunnel syndrome: a randomized, placebo-controlled trial. <i>Ann Intern Med</i> 2013;159:309–17. PMID 24026316. <a href="https://doi.org/10.7326/0003-4819-159-5-201309030-00004" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Wu YT, et al. Six-month efficacy of perineural dextrose for carpal tunnel syndrome. <i>Mayo Clin Proc</i> 2017;92:1179–89. PMID 28778254. <a href="https://doi.org/10.1016/j.mayocp.2017.05.025" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Peters-Veluthamaningal C, et al. Corticosteroid injection for de Quervain’s tenosynovitis. <i>Cochrane Database Syst Rev</i> 2009;(3):CD005616. PMID 19588376. <a href="https://doi.org/10.1002/14651858.CD005616.pub2" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Jahangiri A, et al. Hypertonic dextrose versus corticosteroid local injection for first carpometacarpal OA. <i>J Orthop Sci</i> 2014;19:737–43. PMID 25158896. <a href="https://doi.org/10.1007/s00776-014-0587-2" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+          </ol>
+          <p class="mi-note">Koreksi dari versi sebelumnya: Jahangiri 2014 tidak menunjukkan “setara jangka pendek”. Steroid lebih baik di bulan 1, setara di bulan 2, dan dekstrosa lebih baik di bulan 6.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Kredit mesh &amp; lisensi</h3>
+          <div class="mi-credit">
+            <div><b>Tulang, otot, dan tendon (kedua mode) — BodyParts3D</b><span class="lic">CC BY-SA 2.1 Japan</span>
+              <span>© 2008 Life Science Integrated Database Center (DBCLS); mirror github.com/Kevin-Mattheus-Moerman/BodyParts3D. Tulang diganti dengan versi ±2× lebih rapat, lalu diberi satu tingkat subdivisi Loop + Taubin smoothing. Mesh dipotong ±8,5 cm proksimal sendi radiokarpal. Warna otot vs tendon dihitung otomatis dari ukuran penampang. Mesh turunan berlisensi sama.</span></div>
+            <div><b>Mode Detail: ligamen, selubung tendon, saraf, arteri, retinakulum ekstensor — Z-Anatomy</b><span class="lic">CC BY-SA 4.0</span>
+              <span>Z-Anatomy (Gauthier Kervyn, Lluís Vinent), turunan BodyParts3D; github.com/LluisV/Z-Anatomy. TFCC (diskus artikular + lig. radioulnar palmar/dorsal, lig. ulnolunatum/ulnotriquetrum), lig. skafolunatum interoseus, lig. radiokarpal dorsal, lig. interkarpal dorsal, 9 selubung tendon, n. medianus + cabang palmar, cabang superfisial n. radialis, PIN, n. ulnaris + cabang dorsal/superfisial/profunda, a. radialis, a. ulnaris, arkus palmaris. Diselaraskan dengan ICP (galat rata-rata ±1,4 mm).</span></div>
+            <div><b>Skematik (mode Sederhana)</b><span class="lic">gambar sendiri</span><span>Saraf, pembuluh darah, TFCC, dan retinakulum ekstensor di mode Sederhana adalah tabung/pelat skematik.</span></div>
+            <div><b>Perangkat lunak</b><span class="lic">MIT</span><span>three.js r160, meshoptimizer/gltfpack.</span></div>
+          </div>
+          <p class="mi-note">Tidak ada atlas SPL/Open Anatomy untuk tangan yang tersedia terbuka; Z-Anatomy dipakai sebagai atlas detail.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Model lain</h3>
+          <nav class="mi-nav" aria-label="Model injeksi lain">
+            <a href="https://claude.ai/artifact/6jnnsE3gvEhwYNfZw6F4x6" target="_blank" rel="noopener">Lutut (Rabago)</a>
+            <a href="https://claude.ai/artifact/56aTviE2SvCuFzk1wEybnU" target="_blank" rel="noopener">Atlas SIJ</a>
+            <a href="https://claude.ai/artifact/6vcre4QyWMQLU1o9ZN46wc" aria-current="page">Pergelangan tangan</a>
+            <a href="https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW" target="_blank" rel="noopener">Peta nyeri pinggang</a>
+          </nav>
+          <p class="mi-note">Untuk referensi, edukasi, dan pelatihan. Anatomi pasien bervariasi; konfirmasi dengan palpasi dan USG.</p>
+        </section>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script id="glb_simple" type="application/octet-stream">@@GLB_SIMPLE@@</script>
+<script id="glb_detail" type="application/octet-stream">@@GLB_DETAIL@@</script>
+<script type="module">
+/*@SHELLJS@*/
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/*@LM@*/
+const COLORS = { ext:'#d9622b', vol:'#2f6fd6', jnt:'#14946b', lig:'#8a45b8' };
+const GROUP_NAME = { ext:'Kompartemen ekstensor (dorsal)', vol:'Volar / terowongan karpal', jnt:'Sendi & TFCC', lig:'Ligamen (proloterapi)' };
+const DEF_DOSE = {
+  ext:'Selubung tendon: 0,5–1 mL (mis. triamsinolon 10 mg + lidokain 1% 0,5 mL) · jarum di dalam selubung, bukan intratendon.',
+  vol:'', jnt:'',
+  lig:'Proloterapi: dekstrosa 12,5–15% (lidokain akhir ±0,2%), 0,2–0,5 mL per titik · peppering · jarum menyentuh tulang.'
+};
+/*@POINTS@*/
+/*@CONSTS@*/
+
+// verification per field: s = deskripsi, m = catatan, d = dosis (string status, or array of [text,status] replacing the text)
+const VER = {
+  K1:{s:'g',m:'u',d:[['Triamsinolon asetonid 10–20 mg (0,25–0,5 mL dari 40 mg/mL) + lidokain 1% 0,5–1 mL; total ±1–1,5 mL; thumb-spica 1–2 minggu bila perlu.','u'],['Satu-satunya uji terkontrol di tinjauan Cochrane (n=18, ibu hamil/menyusui): injeksi metilprednisolon + bupivakain lebih baik dari thumb spica, 9/9 vs 0/9 bebas nyeri pada hari 1–6 (Peters-Veluthamaningal 2009).','v']]},
+  K2:{s:'g',m:'g'}, K2i:{s:'u',m:'u'}, K3:{s:'u',m:'u'}, K4:{s:'g',m:'g'}, K5:{s:'g',m:'g'}, K6:{s:'g',m:'u'},
+  CTU:{s:'g',m:'u',d:[['Metilprednisolon 40 mg dan 80 mg lebih baik dari plasebo pada minggu ke-10, tanpa beda bermakna di 1 tahun; angka operasi 1 tahun 81% (40 mg), 73% (80 mg), 92% (plasebo) (Atroshi 2013).','v'],['Triamsinolon 20–40 mg + lidokain 1% 1–2 mL sebagai alternatif.','u'],['Hidrodiseksi perineural terpandu USG: satu sesi 5 mL D5W pada CTS ringan–sedang, nyeri dan fungsi lebih baik dari salin sampai 6 bulan (Wu 2017).','v'],['Tinjauan Cochrane: perbaikan vs plasebo terbukti sampai 1 bulan; dua injeksi tidak lebih baik dari satu (Marshall 2007).','v']]},
+  CTB:{s:'u',m:'u',d:[['Metilprednisolon 40 mg (Atroshi 2013).','v'],['Atau triamsinolon 20–40 mg + lidokain 1% 1 mL.','u']]},
+  FCR:{s:'g',m:'g',d:'u'}, GUY:{s:'g',m:'g'},
+  RC:{s:'u',m:'u',d:'u'}, DRUJ:{s:'g',m:'u',d:'u'}, TFCC:{s:'g',m:'u',d:'u'},
+  CMC1:{s:'g',m:'u',d:[['Triamsinolon 10 mg + lidokain 0,5 mL (0,5–1 mL total).','u'],['RCT Jahangiri 2014: dekstrosa 20% 0,5 mL + lidokain 2% 0,5 mL bulanan ×3 vs metilprednisolon 40 mg sekali. Steroid lebih baik di bulan 1, setara di bulan 2, dekstrosa lebih baik di bulan 6.','v']]},
+  SL:{s:'u',m:'u'}, DRC:{s:'g',m:'g'}
+};
+const SRC = { simple:'BodyParts3D', detail:'BodyParts3D' };
+const DETAIL_NAME = { tfcc_disc:'Diskus artikular TFCC', palmar_ru_lig:'Lig. radioulnar palmar (TFCC)', dorsal_ru_lig:'Lig. radioulnar dorsal (TFCC)', sl_lig:'Lig. skafolunatum interoseus',
+  drc_lig:'Lig. radiokarpal dorsal', dic_lig:'Lig. interkarpal dorsal', ul_lig:'Lig. ulnolunatum', ut_lig:'Lig. ulnotriquetrum', extret:'Retinakulum ekstensor',
+  sh_k1:'Selubung K1 (APL + EPB)', sh_k2:'Selubung K2 (ECRL + ECRB)', sh_k3:'Selubung K3 (EPL)', sh_k4:'Selubung K4 (ED + EI)', sh_k5:'Selubung K5 (EDM)', sh_k6:'Selubung K6 (ECU)',
+  sh_fcr:'Selubung FCR', sh_fpl:'Selubung FPL', sh_flex:'Selubung fleksor bersama', median:'N. medianus', median_palmar:'Cabang kutaneus palmar n. medianus',
+  radial_sup:'Cabang superfisial n. radialis', pin:'N. interoseus posterior (PIN)', ulnar:'N. ulnaris', ulnar_dorsal:'Cabang dorsal n. ulnaris', ulnar_sup:'Cabang superfisial n. ulnaris', ulnar_deep:'Cabang profunda n. ulnaris',
+  radial_a:'A. radialis', ulnar_a:'A. ulnaris', sup_arch:'Arkus palmaris superfisialis', deep_arch:'Arkus palmaris profundus' };
+const LAYERS = {
+  simple:[ ['bone','Tulang',true], ['ext','Tendon ekstensor',true], ['flex','Fleksor & PQ',true], ['intr','Otot tenar/hipotenar',false], ['ret','Retinakulum',true], ['lig','TFCC skematik',true], ['nv','Saraf & pembuluh skematik',true] ],
+  detail:[ ['bone','Tulang',true], ['ext','Tendon ekstensor',false], ['flex','Fleksor & PQ',false], ['intr','Otot tenar/hipotenar',false], ['ret','Retinakulum',true], ['sheath','Selubung tendon',true], ['dlig','Ligamen & TFCC',true], ['nerve','Saraf',true], ['vessel','Arteri',true] ]
+};
+const SUB = {
+  simple:'Versi sederhana: tulang, tendon, dan retinakulum fleksor dari BodyParts3D; saraf, pembuluh darah, TFCC, dan retinakulum ekstensor digambar skematik. Ketuk titik untuk teknik, dosis, dan zona bahaya.',
+  detail:'Versi detail: saraf, arteri, TFCC, ligamen karpal, retinakulum ekstensor, dan selubung tendon diganti mesh atlas Z-Anatomy. Tendon disembunyikan supaya selubung terlihat; nyalakan lagi di Lapisan.'
+};
+const LEGEND = {
+  simple:[['lg-target','Titik target (warna = kelompok)'],['lg-needle','Jarum (saat titik dipilih)'],['#f2c230','Saraf (skematik)'],['#c8322b','Arteri (skematik)'],['#3fbf8f','TFCC (skematik)'],['lg-dash','Label landmark']],
+  detail:[['lg-target','Titik target (warna = kelompok)'],['lg-needle','Jarum (saat titik dipilih)'],['#f2c230','Saraf'],['#c8322b','Arteri'],['#3fbf8f','Ligamen & TFCC'],['#9ad0e0','Selubung tendon'],['#aebfcc','Retinakulum']]
+};
+
+const $ = s => document.querySelector(s);
+const stage=$('#stage'), labelsEl=$('#labels'), infoEl=$('#info'), listEl=$('#list');
+MI.initLegend();
+let mode='simple';
+const seg = a => a.map(([t,k])=>`${t}${MI.vb(k)}`).join(' ');
+function renderList(){
+  listEl.innerHTML='';
+  for (const g of ['ext','vol','jnt','lig']){
+    const h=document.createElement('div'); h.className='mi-grp'; h.textContent=GROUP_NAME[g]; listEl.appendChild(h);
+    for (const p of POINTS.filter(p=>p.g===g)){
+      const r=document.createElement('button'); r.type='button'; r.className='mi-item'; r.dataset.id=p.id;
+      r.innerHTML=`<span class="mi-code" style="background:${COLORS[p.g]}">${p.id}</span><span class="t">${p.n}</span>`;
+      r.onclick=()=>{ select(p.id,true); MI.toStage(); }; listEl.appendChild(r);
+    }
+  }
+}
+renderList();
+function markRow(id){ listEl.querySelectorAll('.mi-item').forEach(r=>r.setAttribute('aria-current', String(r.dataset.id===id))); }
+function showInfo(p){
+  const V=VER[p.id]||{}; const dose=p.d||DEF_DOSE[p.g];
+  const dHtml = Array.isArray(V.d) ? seg(V.d) : dose ? `${dose}${MI.vb(V.d||'u')}` : '';
+  infoEl.innerHTML=`<div class="mi-card-h"><span class="mi-code" style="background:${COLORS[p.g]}">${p.id}</span><h2>${p.n}</h2></div>
+    <div class="mi-badges">${MI.vb('i','Posisi: interpretasi')}<span class="vb g">${GROUP_NAME[p.g]}</span></div>
+    <p class="lead inl">${p.s}${MI.vb(V.s||'u')}</p>
+    <dl class="mi-kv">
+      ${p.m?`<div><dt>Teknik &amp; waspada</dt><dd class="inl">${p.m}${MI.vb(V.m||'u')}</dd></div>`:''}
+      ${dHtml?`<div><dt>Dosis / volume</dt><dd class="inl">${dHtml}</dd></div>`:''}
+    </dl>`;
+}
+function showStruct(key, detail){
+  const st=STRUCT[key]; const nm = detail ? (DETAIL_NAME[key]||key) : (st?st[0]:key.replace(/_/g,' '));
+  const c=COMP[key]?` <span class="mi-code" style="background:${COMP_COL[COMP[key]]}">K${COMP[key]}</span>`:'';
+  const schem = !detail && st && /skematik/.test(st[0]);
+  infoEl.innerHTML=`<h2>${nm}${c}</h2><div class="mi-badges">${schem?MI.vb('u','Gambar skematik'):MI.vb('g','Mesh '+(detail?'Z-Anatomy':'BodyParts3D'))}</div>${!detail&&st&&st[1]?`<p class="inl">${st[1]}${MI.vb('g')}</p>`:''}<p class="mi-empty">Ketuk titik berwarna untuk detail injeksi.</p>`;
+}
+let select=(id)=>{ const p=POINTS.find(x=>x.id===id); if(p){showInfo(p); markRow(id);} };
+
+let renderer;
+try { renderer=new THREE.WebGLRenderer({antialias:true, alpha:true}); } catch(e){ $('#err').hidden=false; $('#loading').hidden=true; }
+
+if (renderer){
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.85;
+  stage.insertBefore(renderer.domElement, labelsEl);
+  const labelRenderer=new CSS2DRenderer({element:labelsEl});
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(38,1,0.05,100);
+  const controls=new OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.minDistance=1.5; controls.maxDistance=20;
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  scene.environment=pmrem.fromScene(new RoomEnvironment(renderer),0.04).texture; scene.environmentIntensity=0.3;
+  scene.add(new THREE.HemisphereLight(0xfffaf0,0x6b6458,0.4));
+  const key=new THREE.DirectionalLight(0xfff3e2,1.4); key.position.set(4,7,6); scene.add(key);
+  const fill=new THREE.DirectionalLight(0xe8f0ff,0.5); fill.position.set(-6,1,4); scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffffff,0.7); rim.position.set(-3,4,-7); scene.add(rim);
+  const back=new THREE.DirectionalLight(0xffffff,0.5); back.position.set(2,-3,-6); scene.add(back);
+
+  const clipPlane=new THREE.Plane(new THREE.Vector3(0,-1,0), -0.8), clipPlane2=new THREE.Plane(new THREE.Vector3(0,1,0), 0.8+0.22);
+  const P=(o)=>new THREE.MeshPhysicalMaterial(Object.assign({side:THREE.DoubleSide},o));
+  const MAT = {
+    bone:P({color:0xe4cfa8,roughness:0.6,clearcoat:0.15,clearcoatRoughness:0.6,transparent:true,opacity:1}),
+    ext:P({color:0xffffff,vertexColors:true,roughness:0.35,clearcoat:0.35,sheen:0.5,sheenColor:0xffffff}),
+    flex:P({color:0xffffff,vertexColors:true,roughness:0.35,clearcoat:0.35,sheen:0.5,sheenColor:0xffffff}),
+    intr:P({color:0xffffff,vertexColors:true,roughness:0.5,sheen:0.6,sheenColor:0xffb3a7,transparent:true,opacity:0.6,depthWrite:false}),
+    ret:P({color:0xaebfcc,roughness:0.35,clearcoat:0.35,sheen:0.7,sheenColor:0xffffff,transparent:true,opacity:0.72,depthWrite:false}),
+    lig:P({color:0x3fbf8f,roughness:0.3,clearcoat:0.6,transparent:true,opacity:0.92}),
+    dlig:P({color:0x3fbf8f,roughness:0.35,clearcoat:0.5}),
+    sheath:P({color:0x9ad0e0,roughness:0.25,clearcoat:0.6,transparent:true,opacity:0.55,depthWrite:false}),
+    nerve:P({color:0xf2c230,roughness:0.35,clearcoat:0.3,emissive:0x3a2c00,emissiveIntensity:0.25}),
+    artery:P({color:0xc8322b,roughness:0.3,clearcoat:0.5}),
+  };
+  MAT.vessel=MAT.artery;
+  const roots={simple:new THREE.Group(), detail:new THREE.Group()}; scene.add(roots.simple, roots.detail);
+  const layerObjs={simple:{},detail:{}}, pickables={simple:[],detail:[]}, extMeshes=[];
+  const shared={};   // layers drawn from the simple GLB that detail mode reuses
+  function addToLayer(m,layer,obj){ (layerObjs[m][layer]=layerObjs[m][layer]||[]).push(obj); }
+  const nodeName=o=>{ let n=o.name||''; if(!n||/^mesh_\d+$/.test(n)) n=(o.parent&&o.parent.name)||n; return n; };
+  function b64buf(id){ const s=atob(document.getElementById(id).textContent.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i); return u.buffer; }
+  const loader=new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+  const parse=id=>new Promise((res,rej)=>loader.parse(b64buf(id),'',res,rej));
+  async function loadSimple(){
+    const gltf=await parse('glb_simple'); gltf.scene.updateMatrixWorld(true);
+    const meshes=[]; gltf.scene.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+    for(const o of meshes){
+      const [layer,k]=nodeName(o).split('__');
+      let mat=MAT[layer]||MAT.bone;
+      if(layer==='ext'){ mat=mat.clone(); extMeshes.push(o); }
+      if(!o.geometry.attributes.color && mat.vertexColors){ mat=mat.clone(); mat.vertexColors=false; mat.color.set(0xf1e6cc); }
+      if(layer==='bone' && o.geometry.attributes.color){ /* bone colour from material */ }
+      o.geometry.computeVertexNormals();
+      o.material=mat; o.userData.key=k;
+      if(layer==='intr'||layer==='ret') o.renderOrder=2;
+      const isSchem = (layer==='lig') || (layer==='ret' && k==='extret');
+      roots.simple.attach(o); pickables.simple.push(o);
+      if(isSchem) addToLayer('simple',layer,o); else (shared[layer]=shared[layer]||[]).push(o);
+    }
+    for(const k in LM.tubes){
+      const [mk,r]=TUBE_STYLE[k];
+      const c=new THREE.CatmullRomCurve3(LM.tubes[k].map(p=>new THREE.Vector3(...p)));
+      const m=new THREE.Mesh(new THREE.TubeGeometry(c,80,r,10,false),MAT[mk]); m.userData.key=k;
+      roots.simple.add(m); addToLayer('simple','nv',m); pickables.simple.push(m);
+    }
+  }
+  async function loadDetail(){
+    if(roots.detail.userData.loaded) return;
+    const gltf=await parse('glb_detail'); gltf.scene.updateMatrixWorld(true);
+    const meshes=[]; gltf.scene.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+    for(const o of meshes){
+      let [layer,k]=nodeName(o).split('__'); if(layer==='lig') layer='dlig';
+      o.geometry.computeVertexNormals(); o.material=MAT[layer]; o.userData.key=k; o.userData.detail=true;
+      if(MAT[layer].transparent) o.renderOrder=2;
+      roots.detail.attach(o); addToLayer('detail',layer,o); pickables.detail.push(o);
+    }
+    roots.detail.userData.loaded=true;
+  }
+
+  const oLabels=[];
+  function olabel(txt,pos,dir){ const d=document.createElement('div'); d.className='ol'; d.textContent=txt; const o=new CSS2DObject(d); o.position.set(...pos); scene.add(o); oLabels.push({obj:o,dir:dir?new THREE.Vector3(...dir):null}); }
+  olabel('RADIAL',[2.6,-2.6,0],[1,0,0]); olabel('ULNAR',[-2.4,-2.6,0],[-1,0,0]); olabel('PALMAR',[0.2,-2.6,2.1],[0,0,1]); olabel('DORSAL',[0.2,-2.6,-2.3],[0,0,-1]); olabel('DISTAL ↑',[0.2,4.2,0]);
+  { const d=document.createElement('div'); d.className='lm'; d.textContent='Tuberkulum Lister'; const o=new CSS2DObject(d); o.position.set(...LM.lister); scene.add(o); oLabels.push({obj:o,dir:new THREE.Vector3(0,0,-1),lm:true}); }
+
+  const ptGroup=new THREE.Group(); scene.add(ptGroup);
+  const hitTargets=[], objs={};
+  const CEN=new THREE.Vector3(0.25,0,-0.1);
+  for(const p of POINTS){
+    const col=new THREE.Color(COLORS[p.g]);
+    const v=new THREE.Vector3(...LM.points[p.id]);
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(0.07,20,16), new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.35,roughness:0.4}));
+    mesh.renderOrder=5; mesh.position.copy(v);
+    const hit=new THREE.Mesh(new THREE.SphereGeometry(0.17,10,8), new THREE.MeshBasicMaterial({visible:false})); hit.userData.id=p.id; hit.position.copy(v);
+    const d=document.createElement('div'); d.className='pl'; d.textContent=p.id; d.style.background=COLORS[p.g];
+    const lbl=new CSS2DObject(d); lbl.position.copy(v);
+    const nrm=new THREE.Vector3(v.x-CEN.x,0,v.z-CEN.z); if(nrm.lengthSq()<1e-4) nrm.set(0,0,-1); nrm.normalize();
+    ptGroup.add(mesh,hit,lbl); hitTargets.push(hit); objs[p.id]={mesh,hit,lbl,p,el:d,nrm};
+  }
+  const needle=new THREE.Group();
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,1,8), new THREE.MeshStandardMaterial({color:0x9aa3ab,metalness:0.8,roughness:0.3}));
+  shaft.position.y=0.5; needle.add(shaft);
+  const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.05,0.35,12), new THREE.MeshStandardMaterial({color:0x2f9e8f,roughness:0.5,transparent:true,opacity:0.85}));
+  hub.position.y=1.0+0.175; needle.add(hub);
+  needle.visible=false; ptGroup.add(needle);
+  const groupOn={ext:true,vol:true,jnt:true,lig:true};
+  function showNeedle(id){
+    const dir=LM.needles[id]; if(!dir){ needle.visible=false; return; }
+    const tip=objs[id].mesh.position; const L=1.7;
+    needle.position.copy(tip); needle.scale.set(1,L,1);
+    needle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), new THREE.Vector3(...dir).normalize());
+    hub.scale.set(1,1/L,1); hub.position.y=1.0+0.175/L;
+    needle.visible=groupOn[objs[id].p.g];
+  }
+
+  let labelMode='code'; try{ labelMode=localStorage.getItem('wristLabel')||'code'; }catch(e){}
+  let labelsOn=labelMode!=='off';
+  const layerOn={simple:{},detail:{}}; for(const m in LAYERS) for(const [k,,on] of LAYERS[m]) layerOn[m][k]=on;
+  function applyLayers(){
+    roots.detail.visible = mode==='detail';
+    for(const [k,arr] of Object.entries(shared)) arr.forEach(o=>o.visible=!!layerOn[mode][k]);
+    for(const m of ['simple','detail']) for(const [k,arr] of Object.entries(layerObjs[m])) arr.forEach(o=>o.visible=(m===mode)&&!!layerOn[mode][k]);
+  }
+  function renderLayerBar(){
+    const bar=$('#layerbar'); bar.innerHTML='<span class="mi-lab">Lapisan</span>';
+    for(const [k,label] of LAYERS[mode]){
+      const c=document.createElement('button'); c.type='button'; c.className='mi-chip'; c.textContent=label; c.setAttribute('aria-pressed',String(layerOn[mode][k]));
+      c.onclick=()=>{ layerOn[mode][k]=!layerOn[mode][k]; c.setAttribute('aria-pressed',String(layerOn[mode][k])); applyLayers(); };
+      bar.appendChild(c);
+    }
+    $('#legendList').innerHTML = LEGEND[mode].map(([t,l])=> t.startsWith('#') ? `<li><span class="lg-sw" style="background:${t}"></span>${l}</li>` : `<li><span class="${t}"></span>${l}</li>`).join('');
+  }
+  function applyPts(){ for(const id in objs){ const o=objs[id], on=groupOn[o.p.g]; o.mesh.visible=on; o.hit.visible=on; } if(selId) showNeedle(selId); }
+  document.querySelectorAll('[data-g]').forEach(el=>{ el.onclick=()=>{ const g=el.dataset.g; groupOn[g]=!groupOn[g]; el.setAttribute('aria-pressed',String(groupOn[g])); applyPts(); }; });
+  function applyLabelMode(){
+    labelsOn = labelMode!=='off';
+    for(const id in objs){ objs[id].el.textContent = labelMode==='name' ? SHORT[id] : id; }
+    MI.press(document.querySelectorAll('#lblmode button'), s=>s.dataset.l===labelMode);
+  }
+  document.querySelectorAll('#lblmode button').forEach(s=>s.onclick=()=>{ labelMode=s.dataset.l; try{localStorage.setItem('wristLabel',labelMode);}catch(e){} applyLabelMode(); });
+  applyLabelMode();
+  $('#tXray').onclick=e=>{ const on=MAT.bone.opacity===1; MAT.bone.opacity=on?0.3:1; MAT.bone.depthWrite=!on; MAT.bone.needsUpdate=true; e.currentTarget.setAttribute('aria-pressed',String(on)); };
+
+  const compLegend=$('#compLegend');
+  compLegend.innerHTML=Object.keys(COMP_TXT).map(k=>`<div><i style="background:${COMP_COL[k]}"></i>${COMP_TXT[k]}</div>`).join('');
+  let tint=false;
+  $('#tTint').onclick=e=>{
+    tint=!tint; e.currentTarget.setAttribute('aria-pressed',String(tint)); compLegend.hidden=!tint;
+    if(tint && !layerOn[mode].ext){ layerOn[mode].ext=true; renderLayerBar(); applyLayers(); }
+    for(const o of extMeshes){ const c=COMP[o.userData.key];
+      o.material.color.set(tint&&c?COMP_COL[c]:0xffffff); o.material.vertexColors=!(tint&&c); o.material.needsUpdate=true; }
+  };
+
+  const clipEl=$('#clip'), clipWrap=$('#clipwrap'), clipMM=$('#clipmm');
+  let clipOn=false;
+  function setClip(){ clipPlane.constant=parseFloat(clipEl.value); clipPlane2.constant=-parseFloat(clipEl.value)+0.22; if(clipOn) view('axial',true); const mm=Math.round(-parseFloat(clipEl.value)*20);
+    clipMM.textContent= mm>0? `${mm} mm proksimal sendi radiokarpal` : mm<0? `${-mm} mm distal sendi radiokarpal` : 'setinggi sendi radiokarpal'; }
+  clipEl.oninput=setClip; setClip();
+  $('#tClip').onclick=e=>{
+    clipOn=!clipOn; e.currentTarget.setAttribute('aria-pressed',String(clipOn)); clipWrap.hidden=!clipOn;
+    renderer.clippingPlanes = clipOn ? [clipPlane,clipPlane2] : []; setClip();
+    if(clipOn) view('axial');
+  };
+
+  let anim=null;
+  function flyTo(pos,target){ anim={t0:performance.now(),dur:650,fp:camera.position.clone(),ft:controls.target.clone(),tp:new THREE.Vector3(...pos),tt:new THREE.Vector3(...target)}; }
+  const DIR={pal:[0,0,1],dor:[0,0,-1],rad:[1,0,0],uln:[-1,0,0],init:[0.45,0.12,0.88],axial:[0.02,1,0.18]};
+  function view(v,instant){ const d=new THREE.Vector3(...DIR[v]).normalize(); const t= v==='axial'?[0.25,clipOn?parseFloat(clipEl.value):0,-0.1]:[0.25,0.1,0]; const D= v==='axial'?7:10.5;
+    MI.press(document.querySelectorAll('.mi-views button'), b=>b.dataset.v===v);
+    if(instant && v==='axial' && !anim){ const off=new THREE.Vector3().subVectors(camera.position,controls.target); controls.target.y=t[1]; camera.position.copy(controls.target).add(off); return; }
+    flyTo([t[0]+d.x*D,t[1]+d.y*D,t[2]+d.z*D], t); }
+  document.querySelectorAll('[data-v]').forEach(el=>{ el.onclick=()=>view(el.dataset.v); });
+  { const d=new THREE.Vector3(...DIR.init).normalize().multiplyScalar(10.5); camera.position.set(0.25+d.x,0.1+d.y,d.z); } controls.target.set(0.25,0.1,0);
+
+  let selId=null, faded=false;
+  function fadeTendons(on){
+    if(on===faded) return; faded=on;
+    for(const k of ['ext','flex']) for(const m of (shared[k]||[])){ const mt=m.material;
+      mt.transparent=on; mt.opacity=on?0.28:1; mt.depthWrite=!on; mt.needsUpdate=true; m.renderOrder=on?3:0; }
+  }
+  select=(id,fly)=>{
+    const o=objs[id]; if(!o) return;
+    if(!groupOn[o.p.g]){ groupOn[o.p.g]=true; document.querySelector(`[data-g="${o.p.g}"]`).setAttribute('aria-pressed','true'); applyPts(); }
+    if(selId){ objs[selId].mesh.scale.setScalar(1); objs[selId].mesh.material.emissiveIntensity=0.35; }
+    selId=id; o.mesh.material.emissiveIntensity=0.9; showInfo(o.p); markRow(id); showNeedle(id);
+    fadeTendons(o.p.g==='jnt'||o.p.g==='lig');
+    if(clipOn){ clipEl.value=Math.max(-3.6,Math.min(2.4,o.mesh.position.y+0.11)).toFixed(2); setClip(); return; }
+    if(fly){ const pt=o.mesh.position.clone(); const out=o.nrm.clone();
+      if(id==='RC'||id==='SL'||id==='TFCC'||id==='DRC') out.set(-0.15,0,-1).normalize();
+      flyTo(pt.clone().addScaledVector(out,4.6).add(new THREE.Vector3(0,1.1,0)).toArray(), pt.toArray()); }
+  };
+
+  async function setMode(m){
+    mode=m; MI.press(document.querySelectorAll('#mode button'), b=>b.dataset.m===m);
+    $('#sub').textContent=SUB[m]; $('#about').textContent=SUB[m]; renderLayerBar();
+    if(m==='detail' && !roots.detail.userData.loaded){ $('#loading').hidden=false; await new Promise(r=>setTimeout(r,30));
+      try{ await loadDetail(); }catch(e){ console.error(e); $('#err').textContent='Mesh detail gagal dimuat.'; $('#err').hidden=false; } $('#loading').hidden=true; }
+    applyLayers();
+  }
+  document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); let down=null;
+  renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(!down) return; const mv=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(mv>6) return;
+    const r=renderer.domElement.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+    ray.setFromCamera(ndc,camera);
+    const clipOK=(p)=>!clipOn || (p.y<=clipPlane.constant+0.05 && p.y>=clipPlane.constant-0.3);
+    const hp=ray.intersectObjects(hitTargets.filter(h=>h.visible),false).filter(h=>clipOK(h.object.position));
+    if(hp.length){ select(hp[0].object.userData.id,false); return; }
+    const cands=[...pickables.simple, ...(mode==='detail'?pickables.detail:[])].filter(o=>o.visible&&o.parent&&o.parent.visible!==false);
+    const hs=ray.intersectObjects(cands,false).filter(h=>clipOK(h.point));
+    if(hs.length){ showStruct(hs[0].object.userData.key, !!hs[0].object.userData.detail); markRow(null); }
+  });
+
+  function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); renderer.domElement.style.width=w+'px'; renderer.domElement.style.height=h+'px'; labelRenderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  const clock=new THREE.Clock(), tmpV=new THREE.Vector3(), cd=new THREE.Vector3();
+  renderer.setAnimationLoop(()=>{
+    const t=clock.getElapsedTime();
+    if(anim){ const k=Math.min(1,(performance.now()-anim.t0)/anim.dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; camera.position.lerpVectors(anim.fp,anim.tp,e); controls.target.lerpVectors(anim.ft,anim.tt,e); if(k>=1) anim=null; }
+    if(selId) objs[selId].mesh.scale.setScalar(MI.reduce?1.5:1.35+0.25*Math.sin(t*5));
+    controls.update();
+    const xray=MAT.bone.opacity<1;
+    for(const id in objs){ const o=objs[id];
+      if(!(groupOn[o.p.g]&&labelsOn) || (clipOn && Math.abs(o.mesh.position.y-(clipPlane.constant-0.11))>0.45)){ o.lbl.visible=false; continue; }
+      tmpV.subVectors(camera.position,o.mesh.position).normalize(); o.lbl.visible= xray || clipOn || id===selId || o.nrm.dot(tmpV)>0.05; }
+    cd.subVectors(camera.position,controls.target).normalize();
+    for(const ol of oLabels){ if(!ol.dir) { ol.obj.visible=!clipOn; continue; } const d=ol.dir.dot(cd); ol.obj.visible= ol.lm ? (d>0.2 && !clipOn) : (d>-0.6&&d<0.8); }
+    renderer.render(scene,camera); labelRenderer.render(scene,camera);
+  });
+
+  try{ await loadSimple(); }catch(e){ console.error(e); $('#err').textContent='Mesh anatomi gagal dimuat.'; $('#err').hidden=false; }
+  const H=(location.hash||'').toLowerCase();
+  await setMode(H.includes('detail')?'detail':'simple');
+  applyPts(); $('#loading').hidden=true;
+}
+</script>

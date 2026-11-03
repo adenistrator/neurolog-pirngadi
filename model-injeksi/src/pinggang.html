@@ -1,0 +1,186 @@
+<title>Peta Nyeri Pinggang 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/*@SHELL@*/
+/* lumbar-map specific pieces, all on shell tokens */
+:root{ --pain-p:#e0303f; --pain-r:#f08c1a; --pain-n:#9b5de5; }
+.mi-chip.on{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.mi-seg button.on{background:var(--accent);color:var(--accent-ink)}
+.mi-seg button:disabled{opacity:.35;cursor:default}
+#views button.on{border-color:var(--accent);color:var(--accent)}
+#stage canvas{width:100%;height:100%}
+#legend{display:grid;gap:3px}
+#legend div{display:flex;align-items:center;gap:7px}
+#legend i{display:inline-block;width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+#opWrap{display:none;align-items:center;gap:6px;font-size:12px;color:var(--muted);flex:0 0 auto}
+#opWrap input{width:110px;accent-color:var(--accent)}
+#orient{position:absolute;left:50%;transform:translateX(-50%);bottom:34px;font-size:11px;color:var(--muted);pointer-events:none;white-space:nowrap;z-index:2}
+@media (max-width:520px){#orient{display:none}}
+#labels{position:absolute;inset:0;pointer-events:none;z-index:2}
+.lab{position:absolute;transform:translate(10px,-50%);font-size:11px;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);padding:2px 6px;border-radius:6px;white-space:nowrap;color:var(--ink)}
+.lab.mk{border-color:var(--pain-p);color:var(--pain-p);font-weight:600}
+.lab.lm{color:var(--muted);font-size:10.5px}
+.lab.lm::before{content:'';position:absolute;left:-9px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--muted)}
+.lab.tg{border-color:var(--ok);color:var(--ok);font-weight:600}
+.grp{font:600 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:12px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--line);color:var(--ink);font:600 13px var(--f-body);min-height:38px;padding:0 12px;border-radius:999px;cursor:pointer;line-height:1.2}
+.chip.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip .sw{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
+.vars{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.vars button{background:var(--surface);border:1px solid var(--line);color:var(--muted);font:600 12.5px var(--f-body);min-height:36px;padding:4px 10px;border-radius:8px;cursor:pointer;text-align:left}
+.vars button.on{border-color:var(--pain-p);color:var(--ink);background:color-mix(in srgb,var(--pain-p) 12%,var(--surface))}
+.card{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;min-width:0}
+.card h2{margin:0 0 4px;font:700 21px/1.1 var(--f-display);text-wrap:balance}
+.card .tag{display:inline-block;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px;margin-right:4px}
+.card h3{font:600 10.5px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:14px 0 4px}
+.card p{margin:4px 0;line-height:1.5}
+.card ul{margin:4px 0;padding-left:18px;line-height:1.5}
+.card li{margin:2px 0}
+.pill{display:inline-block;font-size:10.5px;font-weight:600;border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:1px;border:1px solid}
+.pill.usg{color:var(--accent);border-color:var(--accent)}
+.pill.flu{color:var(--gen);border-color:var(--gen)}
+.pill.lim{color:var(--part);border-color:var(--part)}
+.refs a{color:var(--accent);font-size:12.5px}
+.refs div{margin:3px 0}
+.note{font-size:12.5px;color:var(--muted);line-height:1.5}
+.warn{border-color:color-mix(in srgb,var(--no) 45%,var(--line));background:var(--no-bg)}
+.warn h3{color:var(--no)}
+table.cmp{border-collapse:collapse;width:100%;min-width:520px;font-size:12.5px}
+table.cmp th,table.cmp td{border:1px solid var(--line);padding:6px 7px;vertical-align:top;text-align:left;line-height:1.45}
+table.cmp th{background:var(--surface-2);font-weight:600}
+table.cmp td:first-child{color:var(--muted);width:92px}
+.scrollx{overflow-x:auto;margin-top:8px}
+.tapres .it{display:flex;align-items:center;gap:8px;min-height:var(--tap);border-bottom:1px solid var(--line);cursor:pointer}
+.tapres .bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--pain-p),var(--pain-r));flex:none}
+.tapres .nm{flex:1;font-size:13.5px}
+.tapres .sc{font-size:11px;color:var(--muted);width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.sonoT{font-size:12px;font-weight:600;margin:10px 0 4px}
+.procbox{border-top:1px solid var(--line);margin-top:8px;padding-top:2px}
+table.kv{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+table.kv td{border-top:1px solid var(--line);padding:5px 4px;vertical-align:top;line-height:1.45}
+table.kv td:first-child{color:var(--muted);width:62px}
+ol.steps{margin:4px 0;padding-left:20px;line-height:1.5;font-size:13.5px}
+.empty{color:var(--muted);font-size:13.5px;line-height:1.55;padding:6px 0}
+.lg-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+
+<div class="mi-app" id="app">
+  <header class="mi-head">
+    <div class="mi-title">
+      <div class="mi-eyebrow">Diagnosis banding · pola nyeri · titik injeksi USG</div>
+      <h1>Peta Nyeri Pinggang 3D</h1>
+      <p class="mi-sub" id="sub"></p>
+    </div>
+    <div class="mi-head-ctl">
+      <div class="mi-seg lg" role="group" aria-label="Versi anatomi" id="mode">
+        <button type="button" data-m="simple" aria-pressed="true">Sederhana</button>
+        <button type="button" data-m="detail" aria-pressed="false">Detail</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mi-bar">
+    <div class="mi-row">
+      <span class="mi-lab">Mode</span>
+      <div class="mi-seg" id="modeSeg">
+        <button type="button" data-m="dx" class="on">Diagnosis</button>
+        <button type="button" data-m="cmp">Banding (≤3)</button>
+        <button type="button" data-m="tap">Ketuk area</button>
+      </div>
+      <span class="mi-lab" style="margin-left:6px">Sisi</span>
+      <div class="mi-seg" id="sideSeg">
+        <button type="button" data-s="R" class="on">Kanan</button>
+        <button type="button" data-s="L">Kiri</button>
+        <button type="button" data-s="B">Bilateral</button>
+      </div>
+    </div>
+    <div class="mi-row">
+      <span class="mi-lab">Lapisan</span>
+      <button type="button" class="mi-chip" id="btnAnat">Anatomi</button>
+      <button type="button" class="mi-chip" id="btnInj">Injeksi</button>
+      <button type="button" class="mi-chip" id="btnLab">Landmark</button>
+      <span id="opWrap">Kulit <input id="op" type="range" min="0.08" max="1" step="0.01" value="0.3" aria-label="Transparansi kulit"></span>
+    </div>
+  </div>
+
+  <main class="mi-main">
+    <div class="mi-stage" id="stage">
+      <div id="labels"></div>
+      <details class="mi-legend" id="legendBox">
+        <summary>Legenda</summary>
+        <div id="legend"></div>
+        <ul style="margin-top:6px">
+          <li><span class="lg-dot" style="background:#3df5a0;box-shadow:0 0 0 3px color-mix(in srgb,#3df5a0 30%,transparent)"></span>Titik target injeksi</li>
+          <li><span class="lg-needle"></span>Jarum</li>
+          <li><span class="lg-probe"></span>Probe USG</li>
+        </ul>
+      </details>
+      <div class="mi-views" id="views" role="group" aria-label="Sudut pandang">
+        <button type="button" data-v="P">Blk</button>
+        <button type="button" data-v="L">Smp</button>
+        <button type="button" data-v="A">Dpn</button>
+        <button type="button" data-v="Z">Zoom</button>
+      </div>
+      <div id="orient"></div>
+      <div class="mi-msg" id="loading" hidden>Memuat mesh detail…</div>
+      <div class="mi-msg" id="err" hidden></div>
+      <div class="mi-hint">Seret untuk putar · cubit/scroll untuk zoom · mode Ketuk area: ketuk lokasi nyeri</div>
+    </div>
+
+    <aside class="mi-panel" id="panel" aria-label="Diagnosis, injeksi dan sumber">
+      <div class="mi-panel-in">
+        <p class="mi-about" id="about"></p>
+        <div id="content"></div>
+
+        <section class="mi-sec">
+          <h3>Status verifikasi</h3>
+          <div class="mi-list" style="gap:6px">
+            <div><span class="vb v">Terverifikasi literatur</span> Langkah dan sonoanatomi dari publikasi yang dirujuk.</div>
+            <div><span class="vb p">Sebagian terverifikasi</span> Target/lapisan terverifikasi, orientasi probe skematik.</div>
+            <div><span class="vb g">Skema anatomi umum</span> Anatomi umum, bukan teknik dari studi spesifik.</div>
+          </div>
+          <p class="mi-note">Status ini dipertahankan dari versi sebelumnya. Angka kunci (Slipman, Kuniya, Klauser, Chen, Kim, Finnoff, Galiano, Greher, Reeh) dicek ulang ke abstrak PubMed pada 3 Nov 2026 dan cocok. Posisi titik, probe, dan jarum di 3D adalah ilustrasi pada tubuh skematik.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Kredit mesh &amp; lisensi</h3>
+          <div class="mi-credit">
+            <div><b>Mode Sederhana — tubuh &amp; anatomi skematik</b><span class="lic">gambar sendiri</span><span>Tubuh, vertebra, pelvis, otot, dan saraf dibangun secara prosedural (bentuk geometris). Pola nyeri dilukis di kulit model ini pada kedua mode.</span></div>
+            <div><b>Mode Detail — tulang &amp; otot BodyParts3D</b><span class="lic">CC BY-SA 2.1 Japan</span>
+              <span>© 2008 Life Science Integrated Database Center (DBCLS); mirror github.com/Kevin-Mattheus-Moerman/BodyParts3D. Vertebra T10–L5, diskus T10–S1, sakrum, os coxae, femur proksimal, m. psoas mayor, iliacus, quadratus lumborum, iliokostalis lumborum, longissimus torakis, multifidus, gluteus maximus/medius/minimus, piriformis. Diselaraskan ke model skematik lewat 8 pusat diskus (1 unit model ≈ 71 mm). Mesh turunan berlisensi sama.</span></div>
+            <div><b>Mode Detail — saraf Z-Anatomy</b><span class="lic">CC BY-SA 4.0</span><span>Z-Anatomy (Gauthier Kervyn, Lluís Vinent), turunan BodyParts3D; github.com/LluisV/Z-Anatomy. N. iskiadikus dan n. gluteus superior.</span></div>
+            <div><b>Perangkat lunak</b><span class="lic">MIT</span><span>three.js r160, meshoptimizer/gltfpack.</span></div>
+          </div>
+          <p class="mi-note">Mengapa bukan SPL Abdominal Atlas? Atlas itu sudah dicoba, tetapi proporsinya tidak cocok untuk dewasa (lebar L4 ±59 mm vs ±86 mm di BodyParts3D, jarak antarlevel ±18 mm vs ±30 mm), dan pelvisnya terpotong di ±S2.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Model lain</h3>
+          <nav class="mi-nav" aria-label="Model injeksi lain">
+            <a href="https://claude.ai/artifact/6jnnsE3gvEhwYNfZw6F4x6" target="_blank" rel="noopener">Lutut (Rabago)</a>
+            <a href="https://claude.ai/artifact/56aTviE2SvCuFzk1wEybnU" target="_blank" rel="noopener">Atlas SIJ</a>
+            <a href="https://claude.ai/artifact/6vcre4QyWMQLU1o9ZN46wc" target="_blank" rel="noopener">Pergelangan tangan</a>
+            <a href="https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW" aria-current="page">Peta nyeri pinggang</a>
+          </nav>
+        </section>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script id="glb_detail" type="application/octet-stream">@@GLB_DETAIL@@</script>
+<script type="module">
+/*@SHELLJS@*/
+MI.initLegend();
+/*@APP@*/
+window.__ok=true;
+</script>
+<script>
+setTimeout(()=>{if(!window.__ok){const e=document.getElementById('err');e.hidden=false;e.textContent='Model 3D gagal dimuat (library three.js tidak terunduh). Periksa koneksi lalu muat ulang.';}},9000);
+</script>
