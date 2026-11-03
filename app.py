@@ -25,58 +25,71 @@ if 'pasien' not in st.session_state:
     st.session_state.pasien = {}
 
 # --- FUNGSI PEMBUAT PDF ---
+# Font bawaan PDF (Helvetica) hanya mendukung karakter Latin-1.
+# Karakter lain (tanda pisah panjang, kutip miring, emoji, dll.) diganti dulu
+# supaya PDF tidak crash saat koas menyalin teks dari dokumen lain.
+_PENGGANTI = {
+    "\u2013": "-", "\u2014": "-", "\u2212": "-",
+    "\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"',
+    "\u2026": "...", "\u2022": "-", "\u2264": "<=", "\u2265": ">=",
+}
+
+def bersihkan(teks):
+    teks = str(teks)
+    for asal, ganti in _PENGGANTI.items():
+        teks = teks.replace(asal, ganti)
+    return teks.encode("latin-1", errors="replace").decode("latin-1")
+
 def create_pdf(data):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, "RESUME KLINIS NEUROLOGI", 0, 1, 'C')
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(0, 10, f"RSUD Dr. Pirngadi Medan | Tanggal: {datetime.now().strftime('%d-%m-%Y')}", 0, 1, 'C')
-    pdf.line(10, 30, 200, 30)
-    pdf.ln(10)
+
+    def baris(teks, h=8, style="", size=11, align="L", fill=False):
+        pdf.set_font("Helvetica", style, size)
+        pdf.multi_cell(0, h, bersihkan(teks), align=align, fill=fill,
+                       new_x="LMARGIN", new_y="NEXT")
+
+    baris("RESUME KLINIS NEUROLOGI", h=10, style="B", size=16, align="C")
+    baris(f"RSUD Dr. Pirngadi Medan | Tanggal: {datetime.now().strftime('%d-%m-%Y')}",
+          h=10, style="I", size=10, align="C")
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
 
     # Identitas
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "1. IDENTITAS PASIEN", 0, 1)
-    pdf.set_font("Arial", '', 11)
-    pdf.cell(50, 8, f"Nama Koas: {data.get('koas', '-')}", 0, 1)
-    pdf.cell(50, 8, f"No. RM: {data.get('rm', '-')}", 0, 1)
-    pdf.cell(50, 8, f"Usia: {data.get('usia', '-')} Tahun", 0, 1)
-    pdf.cell(50, 8, f"Diagnosis: {data.get('diagnosis', '-')}", 0, 1)
+    baris("1. IDENTITAS PASIEN", h=10, style="B", size=12)
+    baris(f"Nama Koas: {data.get('koas') or '-'}")
+    baris(f"No. RM: {data.get('rm') or '-'}")
+    baris(f"Usia: {data.get('usia', '-')} Tahun")
+    baris(f"Diagnosis: {data.get('diagnosis') or '-'}")
     pdf.ln(5)
 
     # Vital Sign
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "2. TANDA VITAL", 0, 1)
-    pdf.set_font("Arial", '', 11)
+    baris("2. TANDA VITAL", h=10, style="B", size=12)
+    pdf.set_font("Helvetica", "", 11)
     col_width = 45
-    pdf.cell(col_width, 8, f"TD: {data.get('td', '-')}", 1)
-    pdf.cell(col_width, 8, f"HR: {data.get('hr', '-')} x/i", 1)
-    pdf.cell(col_width, 8, f"RR: {data.get('rr', '-')} x/i", 1)
-    pdf.cell(col_width, 8, f"Suhu: {data.get('temp', '-')} C", 1, 1)
+    vital = [f"TD: {data.get('td', '-')}", f"HR: {data.get('hr', '-')} x/i",
+             f"RR: {data.get('rr', '-')} x/i", f"Suhu: {data.get('temp', '-')} C"]
+    for i, teks in enumerate(vital):
+        akhir = i == len(vital) - 1
+        pdf.cell(col_width, 8, bersihkan(teks), border=1,
+                 new_x="LMARGIN" if akhir else "RIGHT",
+                 new_y="NEXT" if akhir else "TOP")
     pdf.ln(5)
 
     # Skor Klinis
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, "3. SKOR KLINIS", 0, 1)
-    pdf.set_font("Arial", '', 11)
-    
-    # NIHSS
+    baris("3. SKOR KLINIS", h=10, style="B", size=12)
     pdf.set_fill_color(230, 230, 230)
-    pdf.cell(0, 8, f"Total NIHSS Score: {data.get('nihss', 0)} ({data.get('nihss_interp', '-')})", 0, 1, 'L', True)
-    
-    # NRS
-    pdf.cell(0, 8, f"Nyeri (NRS): Diam={data.get('nrs_d', 0)} | Gerak={data.get('nrs_g', 0)}", 0, 1)
-    
-    # KPS
+    baris(f"Total NIHSS Score: {data.get('nihss', 0)} ({data.get('nihss_interp', '-')})", fill=True)
+    if data.get('nihss_un'):
+        baris(f"Item NIHSS tidak dapat dinilai (UN): {data['nihss_un']}", size=10)
+    baris(f"Nyeri (NRS): Diam={data.get('nrs_d', 0)} | Gerak={data.get('nrs_g', 0)}")
     if data.get('kps'):
-        pdf.cell(0, 8, f"Karnofsky Score: {data.get('kps')}", 0, 1)
-    
+        baris(f"Karnofsky Score: {data.get('kps')}")
+
     pdf.ln(10)
-    pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, "*Dokumen ini digenerate otomatis oleh NeuroLog App", 0, 1, 'C')
-    
-    return pdf.output(dest='S').encode('latin-1')
+    baris("*Dokumen ini digenerate otomatis oleh NeuroLog App", h=10, style="I", size=8, align="C")
+
+    return bytes(pdf.output())
 
 # --- TAB NAVIGASI ---
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["👤 Identitas", "🧠 NIHSS (Stroke)", "⚡ NRS (Nyeri)", "🎗️ KPS (Tumor)", "📊 Resume & PDF"])
@@ -117,18 +130,32 @@ with tab2:
     n2 = nihss_opt("2. Gaze (Gerak Mata)", [(0,"Normal"), (1,"Parsial"), (2,"Deviasi Paksa")], "n2")
     n3 = nihss_opt("3. Visual", [(0,"Normal"), (1,"Hemianopia Parsial"), (2,"Hemianopia Komplit"), (3,"Bilateral")], "n3")
     n4 = nihss_opt("4. Wajah", [(0,"Normal"), (1,"Minor"), (2,"Parsial"), (3,"Komplit")], "n4")
-    n5a = nihss_opt("5a. Motorik Lengan Kiri", [(0,"Tahan 10s"), (1,"<10s"), (2,"Jatuh <10s"), (3,"Anti Gravitasi"), (4,"No Move")], "n5a")
-    n5b = nihss_opt("5b. Motorik Lengan Kanan", [(0,"Tahan 10s"), (1,"<10s"), (2,"Jatuh <10s"), (3,"Anti Gravitasi"), (4,"No Move")], "n5b")
-    n6a = nihss_opt("6a. Motorik Tungkai Kiri", [(0,"Tahan 5s"), (1,"<5s"), (2,"Jatuh <5s"), (3,"Anti Gravitasi"), (4,"No Move")], "n6a")
-    n6b = nihss_opt("6b. Motorik Tungkai Kanan", [(0,"Tahan 5s"), (1,"<5s"), (2,"Jatuh <5s"), (3,"Anti Gravitasi"), (4,"No Move")], "n6b")
-    n7 = nihss_opt("7. Ataksia", [(0,"Absen"), (1,"1 Anggota"), (2,"2 Anggota")], "n7")
+    # Item motorik (NIHSS 5-6). "UN" = untestable (amputasi / fusi sendi): tidak dijumlahkan.
+    UN = ("UN", "Tidak dapat dinilai (amputasi / fusi sendi)")
+    lengan = [(0, "Tidak drift, tahan 10 dtk"), (1, "Drift, turun sebelum 10 dtk tapi tidak menyentuh kasur"),
+              (2, "Ada usaha melawan gravitasi, jatuh ke kasur sebelum 10 dtk"),
+              (3, "Tidak ada usaha melawan gravitasi, langsung jatuh"), (4, "Tidak ada gerakan"), UN]
+    tungkai = [(0, "Tidak drift, tahan 5 dtk"), (1, "Drift, turun sebelum 5 dtk tapi tidak menyentuh kasur"),
+               (2, "Ada usaha melawan gravitasi, jatuh ke kasur sebelum 5 dtk"),
+               (3, "Tidak ada usaha melawan gravitasi, langsung jatuh"), (4, "Tidak ada gerakan"), UN]
+    n5a = nihss_opt("5a. Motorik Lengan Kiri", lengan, "n5a")
+    n5b = nihss_opt("5b. Motorik Lengan Kanan", lengan, "n5b")
+    n6a = nihss_opt("6a. Motorik Tungkai Kiri", tungkai, "n6a")
+    n6b = nihss_opt("6b. Motorik Tungkai Kanan", tungkai, "n6b")
+    n7 = nihss_opt("7. Ataksia", [(0,"Absen"), (1,"1 Anggota"), (2,"2 Anggota"), UN], "n7")
+    st.caption("Ataksia diberi skor 0 bila pasien plegi atau tidak memahami perintah.")
     n8 = nihss_opt("8. Sensorik", [(0,"Normal"), (1,"Ringan"), (2,"Berat")], "n8")
     n9 = nihss_opt("9. Bahasa", [(0,"Normal"), (1,"Afasia Ringan"), (2,"Afasia Berat"), (3,"Mute")], "n9")
-    n10 = nihss_opt("10. Disartria", [(0,"Normal"), (1,"Ringan"), (2,"Berat")], "n10")
+    n10 = nihss_opt("10. Disartria", [(0,"Normal"), (1,"Ringan"), (2,"Berat"),
+                                      ("UN", "Tidak dapat dinilai (intubasi / hambatan fisik)")], "n10")
     n11 = nihss_opt("11. Pengabaian (Neglect)", [(0,"Absen"), (1,"Parsial"), (2,"Komplit")], "n11")
 
-    total_nihss = sum([n1a[0], n1b[0], n1c[0], n2[0], n3[0], n4[0], n5a[0], n5b[0], n6a[0], n6b[0], n7[0], n8[0], n9[0], n10[0], n11[0]])
-    
+    semua_item = {"1a": n1a, "1b": n1b, "1c": n1c, "2": n2, "3": n3, "4": n4,
+                  "5a": n5a, "5b": n5b, "6a": n6a, "6b": n6b, "7": n7, "8": n8,
+                  "9": n9, "10": n10, "11": n11}
+    total_nihss = sum(v[0] for v in semua_item.values() if v[0] != "UN")
+    item_un = [k for k, v in semua_item.items() if v[0] == "UN"]
+
     # Interpretasi
     if total_nihss == 0: nihss_interp = "Normal"
     elif total_nihss <= 4: nihss_interp = "Stroke Ringan"
@@ -137,23 +164,29 @@ with tab2:
     else: nihss_interp = "Stroke Berat"
     
     st.metric(label="Total Skor NIHSS", value=total_nihss, delta=nihss_interp, delta_color="inverse")
+    if item_un:
+        st.warning(f"Item tidak dapat dinilai (UN), tidak dijumlahkan: {', '.join(item_un)}")
 
 # --- TAB 3: NRS ---
 with tab3:
     st.header("Penilaian Nyeri (NRS)")
     
+    def interpretasi_nrs(skor):
+        if skor == 0: st.success("😊 Tidak Nyeri")
+        elif skor <= 3: st.info("🙂 Nyeri Ringan")
+        elif skor <= 6: st.warning("😐 Nyeri Sedang")
+        else: st.error("😫 Nyeri Berat")
+
     col_pain1, col_pain2 = st.columns(2)
     with col_pain1:
         st.write("### Saat Diam")
         nrs_d = st.slider("Skala 0-10", 0, 10, 0, key="nrs_d")
-        if nrs_d == 0: st.success("😊 Tidak Nyeri")
-        elif nrs_d <= 3: st.info("🙂 Nyeri Ringan")
-        elif nrs_d <= 6: st.warning("😐 Nyeri Sedang")
-        else: st.error("😫 Nyeri Berat")
-        
+        interpretasi_nrs(nrs_d)
+
     with col_pain2:
         st.write("### Saat Gerak")
         nrs_g = st.slider("Skala 0-10", 0, 10, 0, key="nrs_g")
+        interpretasi_nrs(nrs_g)
 
 # --- TAB 4: KPS ---
 with tab4:
@@ -176,7 +209,8 @@ with tab5:
         'td': td, 'hr': hr, 'rr': rr, 'temp': temp,
         'nihss': total_nihss, 'nihss_interp': nihss_interp,
         'nrs_d': nrs_d, 'nrs_g': nrs_g,
-        'kps': f"{kps[0]} - {kps[1]}"
+        'kps': kps[1],
+        'nihss_un': ", ".join(item_un)
     }
 
     # Grafik Visualisasi (Bar Chart Sederhana)
