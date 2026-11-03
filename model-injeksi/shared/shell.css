@@ -57,7 +57,7 @@ button{font:inherit;color:inherit}
 /* ---------- controls ---------- */
 .mi-chip{flex:0 0 auto;min-height:36px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none}
-.mi-chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.mi-chip[aria-pressed="true"]{background:var(--accent-soft);color:var(--ink);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .mi-chip .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1.5px var(--surface)}
 .mi-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--surface-2);flex:0 0 auto}
 .mi-seg button{min-height:36px;padding:0 14px;border:0;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
@@ -164,7 +164,7 @@ table.mi-t th{font:600 10.5px var(--f-mono);letter-spacing:.08em;text-transform:
 
 /* ---------- procedure mode (big targets, screen kept awake) ---------- */
 .mi-proc{display:none}
-.mi-app.proc .mi-head,.mi-app.proc .mi-bar,.mi-app.proc .mi-panel,.mi-app.proc .mi-hint,.mi-app.proc .mi-legend{display:none}
+.mi-app.proc .mi-views,.mi-app.proc .mi-head,.mi-app.proc .mi-bar,.mi-app.proc .mi-panel,.mi-app.proc .mi-hint,.mi-app.proc .mi-legend{display:none}
 .mi-app.proc{height:100%}
 .mi-app.proc .mi-main{flex-direction:column}
 .mi-app.proc .mi-stage{flex:1;height:auto}

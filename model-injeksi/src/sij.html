@@ -1,0 +1,470 @@
+<title>Atlas Injeksi SIJ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/*@SHELL@*/
+/* tissue palette for the sonogram / anatomy diagrams and the 3D bones */
+:root{
+  --c-skin:#e2a98a; --c-fat:#f0cf6a; --c-muscle:#c9554e; --c-muscle-line:#a8403a; --c-fascia:#f7efe6;
+  --c-sacrum:#ece2c9; --c-sacrum-edge:#8a7b5c; --c-ilium:#b9a6e0; --c-ilium-edge:#6d5a99;
+  --c-joint:#2e8bd0; --c-foramen:#3b3355; --c-lig:#2f9a5a; --c-nerve:#f08c1a; --c-needle:#56616a; --c-disc:#7fb3c9; --c-artery:#c8322b;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --c-skin:#c98f72; --c-fat:#cdab4c; --c-muscle:#a8443e; --c-muscle-line:#8a3530; --c-fascia:#e6dccf;
+  --c-sacrum:#d8cba8; --c-sacrum-edge:#6b5e45; --c-ilium:#9c87c9; --c-ilium-edge:#4f3f7a;
+  --c-joint:#4ba3e3; --c-foramen:#2a243f; --c-lig:#3fb06c; --c-nerve:#f5a03c; --c-needle:#cfd6da; --c-disc:#4f8aa3; --c-artery:#e0544c;
+}}
+:root[data-theme="dark"]{
+  --c-skin:#c98f72; --c-fat:#cdab4c; --c-muscle:#a8443e; --c-muscle-line:#8a3530; --c-fascia:#e6dccf;
+  --c-sacrum:#d8cba8; --c-sacrum-edge:#6b5e45; --c-ilium:#9c87c9; --c-ilium-edge:#4f3f7a;
+  --c-joint:#4ba3e3; --c-foramen:#2a243f; --c-lig:#3fb06c; --c-nerve:#f5a03c; --c-needle:#cfd6da; --c-disc:#4f8aa3; --c-artery:#e0544c;
+}
+.hot-layer{position:absolute;inset:0;pointer-events:none;z-index:2}
+.hot{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;font:700 11px var(--f-mono);min-width:36px;height:36px;padding:0 7px;border-radius:999px;border:2px solid var(--surface);background:var(--ink);color:var(--surface);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.hot[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.viewer{border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.viewer.us,.viewer.rl{background:#000;border-color:#000}
+.viewer svg{display:block;width:100%;height:auto}
+.real{display:grid;gap:10px;place-items:center;padding:24px 16px;text-align:center;color:var(--muted);background:var(--surface-2);min-height:220px}
+.real img{max-width:100%;max-height:520px;display:block;margin:0 auto}
+.real-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.dg-legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12px;color:var(--muted)}
+.dg-legend span{display:inline-flex;align-items:center;gap:6px}
+.dg-legend i{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.cap{font-size:12.5px;color:var(--muted);margin:0}
+.seg-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.seg-row h3{font:700 16px/1.1 var(--f-display);letter-spacing:.04em;text-transform:uppercase;margin:0}
+.inl .vb{margin-left:4px;vertical-align:1px}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<div class="mi-app" id="app">
+  <header class="mi-head">
+    <div class="mi-title">
+      <div class="mi-eyebrow">Neuro-pain · terpandu USG · pelvis posterior</div>
+      <h1>Atlas Injeksi Sendi Sakroiliaka</h1>
+      <p class="mi-sub" id="sub"></p>
+    </div>
+    <div class="mi-head-ctl">
+      <div class="mi-seg lg" role="group" aria-label="Versi model" id="mode">
+        <button type="button" data-m="simple" aria-pressed="true">Sederhana</button>
+        <button type="button" data-m="detail" aria-pressed="false">Detail</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mi-bar">
+    <div class="mi-row" role="group" aria-label="Pilih titik injeksi" id="chips"><span class="mi-lab">Titik</span></div>
+    <div class="mi-row" id="layerbar" role="group" aria-label="Lapisan anatomi"></div>
+  </div>
+
+  <main class="mi-main">
+    <div class="mi-stage" id="stage" aria-label="Model 3D pelvis posterior. Seret untuk memutar, cubit untuk zoom.">
+      <div class="hot-layer" id="hotLayer"></div>
+      <details class="mi-legend" id="legend">
+        <summary>Legenda</summary>
+        <ul id="legendList"></ul>
+      </details>
+      <div class="mi-views" role="group" aria-label="Sudut pandang">
+        <button type="button" data-cam="post" aria-pressed="true">Post</button>
+        <button type="button" data-cam="obl" aria-pressed="false">Oblik</button>
+        <button type="button" data-cam="lat" aria-pressed="false">Lat</button>
+      </div>
+      <div class="mi-msg" id="loading">Memuat model…</div>
+      <div class="mi-msg" id="err" hidden>Model 3D butuh WebGL dan koneksi ke cdn.jsdelivr.net. Gambaran USG dan detail titik di panel tetap bisa dipakai.</div>
+      <div class="mi-hint">Seret untuk putar · cubit/scroll untuk zoom · kiri pasien: IA, PA, LDL · kanan: LB, L5</div>
+    </div>
+
+    <aside class="mi-panel" aria-label="Penampil USG, detail titik dan sumber">
+      <div class="mi-panel-in">
+        <p class="mi-about" id="about"></p>
+        <section class="mi-sec" aria-label="Penampil USG dan anatomi">
+          <div class="seg-row">
+            <h3 id="viewTitle">Gambaran USG</h3>
+            <div class="mi-seg" role="group" aria-label="Mode tampilan">
+              <button id="btnUs" type="button" aria-pressed="true">Skema</button>
+              <button id="btnReal" type="button" aria-pressed="false">Asli</button>
+              <button id="btnAn" type="button" aria-pressed="false">Anatomi</button>
+            </div>
+          </div>
+          <div id="viewer" class="viewer us"></div>
+          <div id="dgLegend" class="dg-legend" hidden></div>
+          <div class="real-bar">
+            <input type="file" id="realFile" accept="image/*" hidden>
+            <button type="button" class="mi-btn ghost" id="realUp">Unggah USG asli untuk titik ini</button>
+            <button type="button" class="mi-btn ghost" id="realDel" hidden>Hapus gambar</button>
+            <span id="realNote">Gambar tersimpan di browser ini saja.</span>
+          </div>
+          <p class="cap" id="caption"></p>
+        </section>
+
+        <article class="mi-card" id="card" aria-live="polite"></article>
+
+        <section class="mi-sec">
+          <h3>Status verifikasi</h3>
+          <div class="mi-list" style="gap:6px">
+            <div><span class="vb v">Terverifikasi</span> Dicek ke abstrak/metadata PubMed (3 Nov 2026) dan isinya cocok.</div>
+            <div><span class="vb p">Sebagian terverifikasi</span> Sebagian kalimat didukung sumber, sebagian tidak.</div>
+            <div><span class="vb i">Interpretasi posisi</span> Lokasi titik di model 3D dan gambar skema adalah ilustrasi, bukan koordinat baku.</div>
+            <div><span class="vb g">Anatomi umum</span> Pengetahuan anatomi standar, tidak dicek per klaim.</div>
+            <div><span class="vb u">Belum terverifikasi</span> Tidak ditemukan di abstrak sumber yang dirujuk. Dosis dan volume di halaman ini adalah contoh praktik umum; sesuaikan dengan PPK/SPO RS, status antikoagulan, dan kondisi pasien.</div>
+          </div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Rujukan</h3>
+          <ol class="mi-refs">
+            <li>Harmon D, O'Sullivan M. Ultrasound-guided sacroiliac joint injection technique. <i>Pain Physician</i> 2008;11:543–7. PMID 18690282 (laporan kasus).<span class="vb v">PubMed</span></li>
+            <li>Jee H, et al. US-guided versus fluoroscopy-guided SIJ intra-articular injections in noninflammatory SIJ dysfunction: prospective randomized study. <i>Arch Phys Med Rehabil</i> 2014;95:330–7. PMID 24121083. <a href="https://doi.org/10.1016/j.apmr.2013.09.021" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Borowsky CD, Fagen G. Sources of sacroiliac region pain: intra- vs combined intra- and peri-articular injection. <i>Arch Phys Med Rehabil</i> 2008;89:2048–56. PMID 18996232. <a href="https://doi.org/10.1016/j.apmr.2008.06.006" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Vleeming A, et al. The function of the long dorsal sacroiliac ligament. <i>Spine</i> 1996;21:556–62. PMID 8852309. <a href="https://doi.org/10.1097/00007632-199603010-00005" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Cohen SP, et al. Randomized placebo-controlled study evaluating lateral branch radiofrequency denervation for sacroiliac joint pain. <i>Anesthesiology</i> 2008;109:279–88. PMID 18648237. <a href="https://doi.org/10.1097/ALN.0b013e31817f4c7c" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Dreyfuss P, et al. Multi-site, multi-depth sacral lateral branch blocks and the SIJ complex. <i>Pain Med</i> 2009;10:679–88. PMID 19638143. <a href="https://doi.org/10.1111/j.1526-4637.2009.00631.x" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Roberts SL, et al. Cadaveric study of sacroiliac joint innervation. <i>Reg Anesth Pain Med</i> 2014;39:456–64. PMID 25304483. <a href="https://doi.org/10.1097/AAP.0000000000000156" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+            <li>Laslett M, et al. Diagnosis of SIJ pain: validity of individual provocation tests and composites. <i>Man Ther</i> 2005;10:207–18. PMID 16038856. <a href="https://doi.org/10.1016/j.math.2005.01.003" target="_blank" rel="noopener">doi</a><span class="vb v">PubMed</span></li>
+          </ol>
+          <p class="mi-note">Koreksi dari versi sebelumnya: Laslett memakai 6 tes (Gaenslen kanan dan kiri dihitung terpisah), bukan 5. Klaim “inervasi posterior dari ramus dorsalis L5” kini dirujuk ke Dreyfuss 2009, karena pada kadaver Roberts 2014 kontribusi L5 hanya 8%. Target RCT Cohen 2008 adalah ramus dorsalis primer L4–L5 + cabang lateral S1–S3.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Kredit mesh &amp; lisensi</h3>
+          <div class="mi-credit">
+            <div><b>Tulang (kedua mode) dan otot gluteus/piriformis — BodyParts3D</b><span class="lic">CC BY-SA 2.1 Japan</span>
+              <span>© 2008 Life Science Integrated Database Center (DBCLS), via mirror github.com/Kevin-Mattheus-Moerman/BodyParts3D. Sakrum, os coxae kanan-kiri, L5, diskus L5–S1, m. piriformis, m. gluteus maximus/medius/minimus. Resolusi dinaikkan dari versi lama (sakrum ±30 ribu segitiga, sebelumnya 9 ribu). Mesh turunan berlisensi sama.</span></div>
+            <div><b>Mode Detail: ligamen, saraf, arteri, multifidus — Z-Anatomy</b><span class="lic">CC BY-SA 4.0</span>
+              <span>Z-Anatomy (Gauthier Kervyn, Lluís Vinent), turunan BodyParts3D; github.com/LluisV/Z-Anatomy. Lig. sakroiliaka posterior dan interoseus, lig. sakrotuberosa, sakrospinosa, iliolumbal, n. iskiadikus, n. gluteus superior, a. gluteus superior dan inferior, m. multifidus lumborum. Diselaraskan ke tulang BodyParts3D dengan ICP (galat rata-rata ±2,8 mm). Mesh kasar disubdivisi dan dihaluskan.</span></div>
+            <div><b>Skematik</b><span class="lic">gambar sendiri</span><span>Pita LDL di mode Sederhana, seluruh gambaran “USG skema”, dan diagram anatomi 2D adalah ilustrasi, bukan rekaman pasien.</span></div>
+            <div><b>Perangkat lunak</b><span class="lic">MIT</span><span>three.js r160, meshoptimizer/gltfpack.</span></div>
+          </div>
+          <p class="mi-note">Mengapa bukan atlas SPL? SPL Abdominal Atlas memotong pelvis dan sakrum di batas bawah CT (±S2), sehingga celah SIJ inferior tidak tercakup. Atlas ini dipakai di Peta Nyeri Pinggang.</p>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Model lain</h3>
+          <nav class="mi-nav" aria-label="Model injeksi lain">
+            <a href="https://claude.ai/artifact/6jnnsE3gvEhwYNfZw6F4x6" target="_blank" rel="noopener">Lutut (Rabago)</a>
+            <a href="https://claude.ai/artifact/56aTviE2SvCuFzk1wEybnU" aria-current="page">Atlas SIJ</a>
+            <a href="https://claude.ai/artifact/6vcre4QyWMQLU1o9ZN46wc" target="_blank" rel="noopener">Pergelangan tangan</a>
+            <a href="https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW" target="_blank" rel="noopener">Peta nyeri pinggang</a>
+          </nav>
+          <p class="mi-note">Untuk referensi, edukasi, dan pelatihan. Bukan pengganti penilaian klinis, PPK/SPO RS, maupun konfirmasi USG pada pasien.</p>
+        </section>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script id="glb_simple" type="application/octet-stream">@@GLB_SIMPLE@@</script>
+<script id="glb_detail" type="application/octet-stream">@@GLB_DETAIL@@</script>
+<script>
+/*@SHELLJS@*/
+/*@HOT@*/
+(function(){
+/*@LEGACY@*/
+
+// ---- corrected clinical text with per-segment verification: [text, status]
+const INFO = {
+ IA:{ target:[['Sepertiga inferior celah SIJ, bagian yang benar-benar sinovial (setinggi foramen S3–S4).','g']],
+   indikasi:[['Komposit ≥3 dari 6 tes provokasi positif (distraction, thigh thrust, compression, sacral thrust, Gaenslen kanan dan kiri): sensitivitas 94%, spesifisitas 78% terhadap blok IA; bila keenamnya negatif, SIJ dapat disingkirkan (Laslett 2005).','v'],['Dipakai untuk blok diagnostik maupun terapeutik; sakroiliitis pada spondiloartritis.','u']],
+   probe:[['Prone. Transduser kurvilinear 4–5 MHz transversal di hiatus sakralis (kornu sakral tampak), geser lateral ke tepi sakrum, lalu ikuti ke kranial sampai tampak celah antara sakrum dan ilium; pada kasus Harmon celah berada di kedalaman 4,5 cm.','v'],['Bantal di bawah perut.','u']],
+   jarum:[['Jarum spinal 22G dengan panduan USG real-time (Harmon 2008).','v'],['Panjang 3,5", in-plane medial ke lateral; rasa “give” saat menembus kapsul posterior.','u']],
+   obat:[['Total 1–2 mL: bupivakain 0,5% 1 mL + triamsinolon asetonid 40 mg atau metilprednisolon asetat 40 mg. Kapasitas sendi kecil; injeksi terasa resisten bila di intra-artikular.','u']],
+   waspada:[['Akurasi USG lebih rendah dari fluoroskopi (87,3% vs 98,2%), sehingga nilai diagnostiknya terbatas. Vaskularisasi di sekitar atau di dalam sendi tampak pada 34 dari 55 pasien kelompok USG (Jee 2014).','v'],['Akurasi lebih buruk pada obesitas dan sendi degeneratif; kebocoran kapsul ventral dapat memblok pleksus lumbosakral (kelemahan tungkai sementara).','u']],
+   bukti:[['RCT Jee 2014 (n=120): skala nyeri dan Oswestry membaik pada minggu 2 dan 12 tanpa beda bermakna antara USG dan fluoroskopi. Harmon 2008: laporan kasus teknik USG.','v']] },
+ PA:{ target:[['Celah SIJ bagian atas setinggi S1, medial PSIS: ligamen sakroiliaka posterior dan interoseus (komponen ekstra-artikular).','g']],
+   indikasi:[['Nyeri tepat di sekitar PSIS (Fortin finger test positif), nyeri ligamen pasca-trauma atau hipermobilitas; tambahan bila respons injeksi IA saja parsial.','u']],
+   probe:[['Convex transversal setinggi S1, mulai dari krista sakral median lalu geser lateral sampai PSIS tampak lebih superfisial dari sakrum.','u']],
+   jarum:[['Spinal 22G, in-plane medial ke lateral menembus m. multifidus, ujung jarum di ligamen dorsal di atas celah.','u']],
+   obat:[['2–3 mL lidokain 1% atau bupivakain 0,25% + steroid dosis rendah (mis. triamsinolon 20 mg). Alternatif regeneratif: dekstrosa 12,5–25%.','u']],
+   waspada:[['Celah atas dalam dan sempit, didominasi ligamen interoseus, jadi bukan jalur yang baik untuk masuk intra-artikular.','g'],['Gunakan Doppler bila arah jarum menuju lateral-dalam.','u']],
+   bukti:[['Borowsky & Fagen 2008 (retrospektif, n=120): respons positif 3 bulan 31,25% dengan injeksi IA + periartikular vs 12,5% dengan IA saja; respons anestesi 62,5% vs 42,5%. Mendukung adanya sumber nyeri ekstra-artikular.','v']] },
+ LDL:{ target:[['Ligamen sakroiliaka dorsal panjang (LDL), mudah dipalpasi tepat kaudal PSIS (Vleeming 1996).','v'],['Berjalan dari PSIS ke krista sakral lateral S3–S4.','g']],
+   indikasi:[['Nyeri di area LDL pada nyeri punggung bawah aspesifik dan nyeri pelvis peripartum (Vleeming 1996).','v'],['Juga untuk hidrodiseksi n. kluneal medius bila dicurigai entrapment.','u']],
+   probe:[['Linear frekuensi tinggi, longitudinal-oblik dari PSIS ke arah kaudal-medial. LDL tampak sebagai pita fibrilar hiperekoik di atas celah antara PSIS dan sakrum.','u']],
+   jarum:[['25G 1,5–2", in-plane dari kaudal ke kranial. Target di permukaan/peri-ligamen, hindari bolus besar intraligamen.','u']],
+   obat:[['1–2 mL anestesi lokal + steroid dosis rendah, atau dekstrosa 15% untuk proloterapi (biasanya serial 3–4 sesi).','u']],
+   waspada:[['N. kluneal medius (dari ramus dorsalis sakral) melintas dekat LDL; parestesia saat jarum maju menandakan kontak saraf, tarik sedikit.','g']],
+   bukti:[['Vleeming 1996 (kadaver, n=12): LDL menegang saat kontranutasi sakrum dan mengendur saat nutasi; ketegangannya dipengaruhi m. erector spinae, lig. sakrotuberosa, dan fasia torakolumbal.','v']] },
+ LB:{ target:[['Tepi lateral foramen sakral posterior S1–S3. Pada 25 hemipelvis kadaver, cabang terbanyak keluar dari kuadran inferolateral S1, superolateral dan inferolateral S2, serta superolateral S3, dan menyilang krista sakral lateral di antara tuberkel transversus sakral 1–3 (Roberts 2014).','v']],
+   indikasi:[['Blok diagnostik sebelum ablasi radiofrekuensi (RF) pada nyeri SIJ kronik yang respons terhadap blok tetapi kambuh.','u'],['Pada RCT Cohen 2008 targetnya ramus dorsalis primer L4–L5 + cabang lateral S1–S3.','v']],
+   probe:[['Convex transversal. Mulai dari krista sakral median, geser lateral sampai garis hiperekoik sakrum “terputus”: itulah foramen posterior. Ulangi untuk S1, S2, S3.','u']],
+   jarum:[['Teknik multi-site multi-depth di tiap level (Dreyfuss 2009).','v'],['22–25G 3,5", in-plane lateral ke medial menuju tepi lateral foramen; 2–3 titik per level.','u']],
+   obat:[['0,2–0,5 mL bupivakain 0,5% per titik (blok diagnostik volume kecil). Respons positif: nyeri turun ≥50–80% selama durasi kerja obat.','u'],['Dreyfuss 2009 memakai bupivakain 0,75% pada sukarelawan sehat.','v']],
+   waspada:[['Inervasi bervariasi: S1–S2 berkontribusi pada semua spesimen, S3 88%, L5 8%, S4 4% (Roberts 2014). Blok multi-site multi-depth tidak memblok bagian intra-artikular SIJ (Dreyfuss 2009).','v'],['Untuk RF, fluoroskopi masih standar acuan.','u']],
+   bukti:[['Cohen 2008 (RCT, n=28, cooled RF): ≥50% pengurangan nyeri pada 79%, 64%, 57% pasien di bulan 1, 3, 6 vs plasebo 14% di bulan 1 dan 0% di bulan 3; pada 1 tahun hanya 14% yang bertahan. Dreyfuss 2009: ligamen IO dan DSI menjadi insensate pada 70% kelompok aktif.','v']] },
+ L5:{ target:[['Alur (groove) antara prosesus artikularis superior S1 dan ala sakrum, tempat ramus dorsalis L5 menyilang.','g']],
+   indikasi:[['Bagian dari blok/RF inervasi SIJ posterior (bersama cabang lateral S1–S3). Juga untuk nyeri faset L5–S1.','u']],
+   probe:[['Convex transversal setinggi L5–S1. Identifikasi prosesus spinosus, lalu geser lateral: SAP S1 tampak sebagai “bukit” dan ala sakrum sebagai garis datar di lateralnya.','u']],
+   jarum:[['22G 3,5", in-plane lateral ke medial sampai kontak tulang di dasar alur.','u']],
+   obat:[['≤0,5 mL bupivakain 0,5% untuk blok diagnostik.','u']],
+   waspada:[['Volume >0,5 mL menurunkan spesifisitas karena menyebar ke foramen L5 atau ventral. Hati-hati pada sakralisasi/transisi lumbosakral; konfirmasi level.','u']],
+   bukti:[['Dreyfuss 2009: inervasi dorsal SIJ berasal dari ramus dorsalis L5 dan cabang lateral S1–3. Namun pada kadaver Roberts 2014 kontribusi L5 hanya 8%. Cohen 2008 menyertakan ramus dorsalis primer L4–L5 pada protokol RF.','v']] },
+};
+const FIELDS=[['indikasi','Indikasi'],['probe','Posisi & probe'],['jarum','Teknik jarum'],['obat','Obat (contoh)'],['waspada','Waspada'],['bukti','Bukti']];
+const seg = a => a.map(([t,k])=>`${t}${MI.vb(k)}`).join(' ');
+function worst(a){ const o=['u','p','i','g','v']; let w='v'; a.forEach(([,k])=>{ if(o.indexOf(k)<o.indexOf(w)) w=k; }); return w; }
+// IA frequency corrected to the source (Harmon 2008: 4–5 MHz)
+SITES.find(s=>s.id==='IA').freq='4–5 MHz';
+
+let state = {site:'IA', view:'us'};
+const $ = s => document.querySelector(s);
+MI.initLegend();
+
+function buildChips(){
+  $('#chips').insertAdjacentHTML('beforeend', SITES.map(s=>`<button class="mi-chip" type="button" data-id="${s.id}" aria-pressed="false"><b style="font:700 11px var(--f-mono)">${s.id}</b>${s.chip}</button>`).join(''));
+  $('#chips').addEventListener('click', e=>{ const b=e.target.closest('.mi-chip'); if(b){ select(b.dataset.id); } });
+}
+const REAL = {};
+const realKey = id => 'sij-real-' + id;
+function realImg(id){ if(REAL[id]) return REAL[id]; try{ return localStorage.getItem(realKey(id)); }catch(e){ return null; } }
+function usView(id){ return realImg(id) ? 'real' : 'us'; }
+function select(id){
+  if(id===state.site) state.view = state.view==='an' ? usView(id) : 'an';
+  else { state.site=id; state.view=usView(id); }
+  render();
+}
+window.SIJselect = select;
+function setView(v){ state.view=v; render(); }
+
+function render(){
+  const i = SITES.findIndex(s=>s.id===state.site), s = SITES[i];
+  MI.press(document.querySelectorAll('#chips .mi-chip'), c=>c.dataset.id===s.id);
+  if(window.__sij3d) window.__sij3d.update(s.id);
+  const v = state.view, us = v==='us', real = v==='real', an = v==='an';
+  MI.press([$('#btnUs')],()=>us); MI.press([$('#btnReal')],()=>real); MI.press([$('#btnAn')],()=>an);
+  $('#viewTitle').textContent = an ? 'Diagram anatomi' : real ? 'USG asli' : 'Gambaran USG';
+  const vw = $('#viewer'); vw.className = 'viewer ' + (an ? 'an' : real ? 'rl' : 'us');
+  const img = realImg(s.id);
+  if(an) vw.innerHTML = anSVG(s);
+  else if(real) vw.innerHTML = img
+    ? `<div class="real" style="padding:0;background:#000"><img src="${img}" alt="USG asli ${s.name}"></div>`
+    : `<div class="real"><strong style="color:var(--ink)">Belum ada USG asli untuk titik ${s.id}</strong><span>Unggah tangkapan layar dari mesin USG (JPG/PNG), sebaiknya sudah dianonimkan. Bidang yang cocok: ${s.plane}.</span><button type="button" class="mi-btn" onclick="document.getElementById('realFile').click()">Pilih gambar</button></div>`;
+  else vw.innerHTML = usSVG(s,i);
+  $('#dgLegend').innerHTML = an ? legendFor(s) : '';
+  $('#dgLegend').hidden = !an;
+  $('#realDel').hidden = !(img && !REAL[s.id]);
+  $('#realUp').textContent = img ? 'Ganti USG asli' : 'Unggah USG asli untuk titik ini';
+  $('#caption').innerHTML = (an
+    ? `${s.plane}. Bidang potong sama dengan gambar USG, tiap jaringan diberi warna berbeda. `
+    : real ? (img ? `${s.plane}. Gambar dari unggahan Anda. ` : `${s.plane}. `)
+    : `${s.plane}. Garis putih terang = permukaan tulang dengan bayangan akustik; lingkaran kuning = target. `) + 'Ketuk titik yang sama lagi untuk berganti tampilan. ' + (real?'':MI.vb('i','Ilustrasi skematik'));
+  const n = INFO[s.id];
+  $('#card').innerHTML = `
+    <div class="mi-card-h"><span class="mi-code" style="background:var(--accent);color:var(--accent-ink)">${s.id}</span><h2>${s.name}</h2></div>
+    <div class="mi-badges">${MI.vb('i','Posisi 3D: interpretasi')}${MI.vb(worst(n.obat),'Dosis: '+(worst(n.obat)==='v'?'terverifikasi':'belum terverifikasi'))}</div>
+    <p class="lead inl"><strong>Target:</strong> ${seg(n.target)}</p>
+    <dl class="mi-kv">${FIELDS.map(([k,l])=>`<div><dt>${l}</dt><dd class="inl${k==='waspada'?' warn':''}">${seg(n[k])}</dd></div>`).join('')}</dl>`;
+}
+
+$('#btnUs').addEventListener('click', ()=>setView('us'));
+$('#btnAn').addEventListener('click', ()=>setView('an'));
+$('#btnReal').addEventListener('click', ()=>setView('real'));
+$('#realUp').addEventListener('click', ()=>$('#realFile').click());
+$('#realDel').addEventListener('click', ()=>{ try{ localStorage.removeItem(realKey(state.site)); }catch(e){} delete REAL[state.site]; state.view='us'; render(); });
+$('#realFile').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ const url = r.result; let saved = true;
+    try{ localStorage.setItem(realKey(state.site), url); }catch(err){ saved = false; }
+    if(!saved){ REAL[state.site] = url; $('#realNote').textContent = 'Gambar terlalu besar untuk disimpan; tampil sampai halaman ditutup.'; }
+    state.view='real'; render(); e.target.value=''; };
+  r.readAsDataURL(f);
+});
+buildChips(); render();
+})();
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+const $ = s => document.querySelector(s);
+const SUB = {
+  simple:'Versi sederhana: tulang pelvis, L5, dan diskus L5–S1 dari BodyParts3D; permukaan sendi SIJ diwarnai biru, LDL digambar skematik. Ketuk titik untuk gambaran USG, ketuk lagi untuk diagram anatomi.',
+  detail:'Versi detail: ditambah ligamen sakroiliaka, sakrotuberosa, sakrospinosa, iliolumbal, n. iskiadikus, n. gluteus superior, a. gluteus, dan otot gluteal/piriformis/multifidus (Z-Anatomy + BodyParts3D).'
+};
+const LAYERS = {
+  simple:[['bone','Tulang',true],['joint','Permukaan sendi',true],['ldl','LDL skematik',true]],
+  detail:[['bone','Tulang',true],['joint','Permukaan sendi',true],['lig','Ligamen',true],['nerve','Saraf',true],['vessel','Arteri',true],['mus','Piriformis, gluteus med/min, multifidus',false],['gmax','Gluteus maximus',false]]
+};
+const LEGEND = {
+  simple:[['lg-target','Titik target (aktif = hijau toska)'],['lg-dash','Garis penunjuk ke tombol titik'],['--c-sacrum','Sakrum / L5'],['--c-ilium','Ilium (os coxae)'],['--c-joint','Permukaan sendi SIJ'],['--c-lig','LDL (skematik)'],['--c-disc','Diskus L5–S1']],
+  detail:[['lg-target','Titik target (aktif = hijau toska)'],['--c-sacrum','Sakrum / L5'],['--c-ilium','Ilium'],['--c-joint','Permukaan sendi SIJ'],['--c-lig','Ligamen'],['--c-nerve','Saraf'],['--c-artery','Arteri'],['--c-muscle','Otot']]
+};
+const LG_TAIL = '<li><span class="lg-needle"></span>Jarum (di gambar USG/anatomi)</li><li><span class="lg-probe"></span>Probe (di diagram anatomi)</li>';
+const NAME = { sacrum:'Sakrum', hipL:'Os coxae kiri', hipR:'Os coxae kanan', L5:'Vertebra L5', disc:'Diskus L5–S1', ldl:'LDL (skematik)',
+  post_si_lig:'Lig. sakroiliaka posterior', interosseous_si_lig:'Lig. sakroiliaka interoseus', sacrotuberous:'Lig. sakrotuberosa', sacrospinous:'Lig. sakrospinosa', iliolumbar:'Lig. iliolumbal',
+  sciatic:'N. iskiadikus', sup_gluteal_n:'N. gluteus superior', sup_gluteal_a:'A. gluteus superior', inf_gluteal_a:'A. gluteus inferior',
+  piriformis:'M. piriformis', gluteus_maximus:'M. gluteus maximus', gluteus_medius:'M. gluteus medius', gluteus_minimus:'M. gluteus minimus', multifidus:'M. multifidus lumborum' };
+const SRCN = { mus:'BodyParts3D', bone:'BodyParts3D' };
+let mode='simple';
+try {
+const stage = $('#stage'), hotLayer = $('#hotLayer');
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+stage.insertBefore(renderer.domElement, hotLayer);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 1, 5, 3000);
+scene.add(camera);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x5a6664, 1.5));
+const key = new THREE.DirectionalLight(0xffffff, 1.7); key.position.set(-120, 200, 260); camera.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.5); fill.position.set(200, -60, 100); camera.add(fill);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.target.set(0, 5, 0); controls.minDistance = 120; controls.maxDistance = 900;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+const b64buf = id => { const s=atob(document.getElementById(id).textContent.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i); return u.buffer; };
+const objs = { simple:{}, detail:{} }; const bones = {}; const pick=[];
+const boneTok = { sacrum:'--c-sacrum', L5:'--c-sacrum', hipL:'--c-ilium', hipR:'--c-ilium', disc:'--c-disc' };
+const layerOn = { simple:{}, detail:{} }; for(const m in LAYERS) for(const [k,,on] of LAYERS[m]) layerOn[m][k]=on;
+const add = (m,layer,o) => (objs[m][layer]=objs[m][layer]||[]).push(o);
+const nodeName = o => { let n=o.name||''; if(!n||/^mesh_\d+$/.test(n)) n=(o.parent&&o.parent.name)||n; return n; };
+const mats = {
+  lig: new THREE.MeshStandardMaterial({ roughness:.5, side:THREE.DoubleSide }), nerve: new THREE.MeshStandardMaterial({ roughness:.4, emissiveIntensity:.15, side:THREE.DoubleSide }),
+  vessel: new THREE.MeshStandardMaterial({ roughness:.35 }), mus: new THREE.MeshStandardMaterial({ roughness:.6, transparent:true, opacity:.55, depthWrite:false, side:THREE.DoubleSide }),
+  gmax: new THREE.MeshStandardMaterial({ roughness:.6, transparent:true, opacity:.35, depthWrite:false }), ldl: new THREE.MeshStandardMaterial({ roughness:.6 })
+};
+function parse(id){ return new Promise((res,rej)=>loader.parse(b64buf(id),'',res,rej)); }
+async function loadSimple(){
+  const g = await parse('glb_simple'); g.scene.updateMatrixWorld(true);
+  const ms=[]; g.scene.traverse(o=>{ if(o.isMesh) ms.push(o); });
+  for(const o of ms){ const k=nodeName(o); o.geometry.computeVertexNormals();
+    const c=o.geometry.attributes.color; const n=c.count; const J=new Uint8Array(n); for(let i=0;i<n;i++) J[i]=c.getX(i)>0.5?1:0;
+    o.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n*3),3));
+    o.material=new THREE.MeshStandardMaterial({ vertexColors:true, roughness:.78, metalness:0 }); o.userData={ key:k, J, tok:boneTok[k] };
+    scene.attach(o); bones[k]=o; pick.push(o); }
+  // schematic LDL band: PSIS -> lateral sacral crest (simple mode only)
+  const P = new THREE.Vector3(...PSIS_L), M = new THREE.Vector3(...HOT.LDL);
+  const E = M.clone().add(M.clone().sub(P).multiplyScalar(0.9));
+  const curve = new THREE.QuadraticBezierCurve3(P, M.clone().add(new THREE.Vector3(0,0,4)), E);
+  const ldl = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 2.2, 8), mats.ldl); ldl.userData={key:'ldl'}; scene.add(ldl); add('simple','ldl',ldl); pick.push(ldl);
+}
+async function loadDetail(){
+  if(objs.detail.loaded) return;
+  const g = await parse('glb_detail'); g.scene.updateMatrixWorld(true);
+  const ms=[]; g.scene.traverse(o=>{ if(o.isMesh) ms.push(o); });
+  for(const o of ms){ const nm=nodeName(o); let [layer,k]=nm.split('__'); if(k && k.startsWith('gluteus_maximus')) layer='gmax';
+    o.geometry.computeVertexNormals(); o.material=mats[layer]; o.userData={ key:k.replace(/_[rl]$/,''), side:k.slice(-1) };
+    if(o.material.transparent) o.renderOrder=2; scene.attach(o); add('detail',layer,o); pick.push(o); }
+  objs.detail.loaded=true;
+}
+function paint(){
+  const jc = new THREE.Color(css('--c-joint'));
+  for (const m of Object.values(bones)) {
+    const base = new THREE.Color(css(m.userData.tok)), col = m.geometry.attributes.color, J = m.userData.J, jOn = layerOn[mode].joint;
+    for (let i=0;i<col.count;i++){ const c = jOn && J[i] ? jc : base; col.setXYZ(i, c.r, c.g, c.b); }
+    col.needsUpdate = true;
+  }
+  mats.lig.color.set(css('--c-lig')); mats.ldl.color.set(css('--c-lig')); mats.nerve.color.set(css('--c-nerve')); mats.nerve.emissive.set(css('--c-nerve'));
+  mats.vessel.color.set(css('--c-artery')); mats.mus.color.set(css('--c-muscle')); mats.gmax.color.set(css('--c-muscle'));
+  dots.forEach(d => d.mesh.material.color.set(css(d.site===cur ? '--accent' : '--ink')));
+}
+function applyLayers(){
+  for(const b of Object.values(bones)) b.visible = layerOn[mode].bone;
+  for(const m of ['simple','detail']) for(const [k,arr] of Object.entries(objs[m])) if(Array.isArray(arr)) arr.forEach(o=>o.visible = (m===mode) && !!layerOn[mode][k]);
+  paint();
+}
+function renderBars(){
+  const bar=$('#layerbar'); bar.innerHTML='<span class="mi-lab">Lapisan</span>';
+  for(const [k,label] of LAYERS[mode]){ const c=document.createElement('button'); c.type='button'; c.className='mi-chip'; c.textContent=label; c.setAttribute('aria-pressed',String(layerOn[mode][k]));
+    c.onclick=()=>{ layerOn[mode][k]=!layerOn[mode][k]; c.setAttribute('aria-pressed',String(layerOn[mode][k])); applyLayers(); }; bar.appendChild(c); }
+  $('#legendList').innerHTML = LEGEND[mode].map(([t,l])=> t.startsWith('--') ? `<li><span class="lg-sw" style="background:var(${t})"></span>${l}</li>` : `<li><span class="${t}"></span>${l}</li>`).join('') + LG_TAIL;
+}
+async function setMode(m){
+  mode=m; MI.press(document.querySelectorAll('#mode button'), b=>b.dataset.m===m);
+  $('#sub').textContent=SUB[m]; $('#about').textContent=SUB[m]; renderBars();
+  if(m==='detail' && !objs.detail.loaded){ $('#loading').hidden=false; await new Promise(r=>setTimeout(r,30)); try{ await loadDetail(); }catch(e){ console.error(e); $('#err').textContent='Mesh detail gagal dimuat.'; $('#err').hidden=false; } $('#loading').hidden=true; }
+  applyLayers();
+}
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+const SITE_PTS = { IA:['IA'], PA:['PA'], LDL:['LDL'], LB:['LB1','LB2','LB3'], L5:['L5'] };
+const LABEL_AT = { IA:'IA', PA:'PA', LDL:'LDL', LB:'LB2', L5:'L5' };
+const dots = [];
+for (const [site, keys] of Object.entries(SITE_PTS)) for (const k of keys) {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.6, 16, 12), new THREE.MeshBasicMaterial({ depthTest:false }));
+  mesh.position.set(...HOT[k]); mesh.renderOrder = 10; scene.add(mesh); dots.push({ site, mesh });
+}
+const hots = {};
+for (const [site, k] of Object.entries(LABEL_AT)) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'hot'; b.textContent = site; b.setAttribute('aria-pressed','false');
+  b.setAttribute('aria-label', 'Pilih titik ' + site);
+  b.addEventListener('click', () => window.SIJselect && window.SIJselect(site));
+  hotLayer.appendChild(b); hots[site] = { b, anchor: new THREE.Vector3(...HOT[k]) };
+}
+const OFF = { PA:[44,-34], LDL:[60,0], IA:[44,36], LB:[52,12], L5:[44,-30] };
+const leader = document.createElementNS('http://www.w3.org/2000/svg','svg');
+leader.setAttribute('style','position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible');
+hotLayer.prepend(leader);
+
+let cur = null;
+const VIEWS = { post:[0, 40, 520], obl:[300, 60, 420], lat:[520, 30, 40] };
+let anim = null;
+function goView(v){
+  const to = new THREE.Vector3(...VIEWS[v]), from = camera.position.clone(), t0 = performance.now();
+  anim = t => { const k = Math.min(1, (t - t0)/600), e = k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2; camera.position.lerpVectors(from, to, e); if (k>=1) anim = null; };
+  MI.press(document.querySelectorAll('[data-cam]'), b=>b.dataset.cam===v);
+}
+document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => goView(b.dataset.cam)));
+camera.position.set(...VIEWS.post);
+
+// tap a structure to name it
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); let down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!down) return; const mv=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(mv>6) return;
+  const r=renderer.domElement.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera); const h=ray.intersectObjects(pick.filter(o=>o.visible),false); if(!h.length) return;
+  const u=h[0].object.userData, side=u.side==='r'?' kanan':u.side==='l'?' kiri':'';
+  const src = h[0].object.material===mats.mus||h[0].object.material===mats.gmax ? (/multifidus/.test(u.key)?'Z-Anatomy':'BodyParts3D') : bones[u.key] ? 'BodyParts3D' : u.key==='ldl' ? null : 'Z-Anatomy';
+  const t=$('#structTip'); t.innerHTML=`<b>${(NAME[u.key]||u.key)+side}</b> ${src?MI.vb('g','Mesh '+src):MI.vb('u','Skematik')}`; t.hidden=false; clearTimeout(t._h); t._h=setTimeout(()=>t.hidden=true,4000);
+});
+const tip=document.createElement('div'); tip.id='structTip'; tip.hidden=true; tip.setAttribute('role','status');
+tip.style.cssText='position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:13px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:center;white-space:nowrap';
+stage.appendChild(tip);
+
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); renderer.domElement.style.width=w+'px'; renderer.domElement.style.height=h+'px'; camera.aspect = w/h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(stage); resize();
+
+const v = new THREE.Vector3(), centre = new THREE.Vector3(0, 5, 0);
+function place(){
+  const w = stage.clientWidth, h = stage.clientHeight; let svg = '';
+  const c = centre.clone().project(camera), cx = (c.x+1)/2*w;
+  for (const [site, o] of Object.entries(hots)) {
+    v.copy(o.anchor).project(camera);
+    const ax = (v.x+1)/2*w, ay = (1-v.y)/2*h;
+    const [ox, oy] = OFF[site], sx = ax >= cx ? 1 : -1;
+    const bx = Math.max(22, Math.min(w-22, ax + sx*ox)), by = Math.max(22, Math.min(h-22, ay + oy));
+    o.b.style.left = bx+'px'; o.b.style.top = by+'px'; o.b.hidden = v.z > 1;
+    const col = site===cur ? 'var(--accent)' : 'var(--ink)';
+    svg += `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="1.4" stroke-dasharray="3 2"/>`;
+  }
+  leader.innerHTML = svg;
+}
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(t => {
+  if (anim) anim(t);
+  controls.update();
+  const s = MI.reduce ? 1.3 : 1 + 0.25*Math.sin(clock.getElapsedTime()*4);
+  dots.forEach(d => d.mesh.scale.setScalar(d.site===cur ? s*1.3 : 1));
+  renderer.render(scene, camera); place();
+});
+window.__sij3d = { update(site){ cur = site; Object.entries(hots).forEach(([k,o]) => o.b.setAttribute('aria-pressed', String(k===site))); paint(); } };
+const mq = window.matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener && mq.addEventListener('change', paint);
+new MutationObserver(paint).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+await loadSimple();
+const H=(location.hash||'').toLowerCase();
+await setMode(H.includes('detail')?'detail':'simple');
+window.__sij3d.update(document.querySelector('#chips .mi-chip[aria-pressed="true"]')?.dataset.id || 'IA');
+$('#loading').hidden = true;
+} catch (err) {
+  $('#loading').hidden = true; $('#err').hidden = false;
+  console.error(err);
+}
+</script>
