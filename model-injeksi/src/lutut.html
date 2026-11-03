@@ -1,0 +1,531 @@
+<title>Titik Injeksi Proloterapi Lutut (Rabago)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@600;700&display=swap">
+<style>
+/*@SHELL@*/
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<div class="mi-app" id="app">
+  <header class="mi-head">
+    <div class="mi-title">
+      <div class="mi-eyebrow">Proloterapi · lutut kanan</div>
+      <h1>Titik Injeksi Proloterapi Lutut (Rabago)</h1>
+      <p class="mi-sub" id="sub"></p>
+    </div>
+    <div class="mi-head-ctl">
+      <div class="mi-seg lg" role="group" aria-label="Versi model" id="mode">
+        <button type="button" data-m="simple" aria-pressed="true">Sederhana</button>
+        <button type="button" data-m="detail" aria-pressed="false">Detail</button>
+      </div>
+      <button type="button" class="mi-btn" id="procstart">▶ Mode prosedur</button>
+    </div>
+  </header>
+
+  <div class="mi-bar">
+    <div class="mi-row" role="group" aria-label="Kelompok titik">
+      <span class="mi-lab">Titik</span>
+      <button type="button" class="mi-chip" data-g="med" aria-pressed="true"><span class="dot" style="background:#2f6fd6"></span>Medial</button>
+      <button type="button" class="mi-chip" data-g="lat" aria-pressed="true"><span class="dot" style="background:#d9622b"></span>Lateral</button>
+      <button type="button" class="mi-chip" data-g="pat" aria-pressed="true"><span class="dot" style="background:#8a45b8"></span>Patela</button>
+      <button type="button" class="mi-chip" data-g="ia" aria-pressed="true"><span class="dot" style="background:#14946b"></span>Intraartikular</button>
+    </div>
+    <div class="mi-row" id="layerbar" role="group" aria-label="Lapisan anatomi"></div>
+    <div class="mi-row" role="group" aria-label="Tampilan label">
+      <span class="mi-lab">Label</span>
+      <div class="mi-seg" id="lblmode">
+        <button type="button" data-l="code" aria-pressed="true">Kode</button>
+        <button type="button" data-l="name" aria-pressed="false">Nama</button>
+        <button type="button" data-l="off" aria-pressed="false">Mati</button>
+      </div>
+      <button type="button" class="mi-chip" id="tXray" aria-pressed="false">Tulang transparan</button>
+    </div>
+  </div>
+
+  <main class="mi-main">
+    <div class="mi-stage" id="stage">
+      <div class="mi-labels" id="labels"></div>
+      <details class="mi-legend" id="legend">
+        <summary>Legenda</summary>
+        <ul>
+          <li><span class="lg-target"></span>Titik target (warna = regio)</li>
+          <li><span class="lg-needle"></span>Arah jarum IA</li>
+          <li><span class="lg-sw" style="background:#2f6fd6"></span>Medial</li>
+          <li><span class="lg-sw" style="background:#d9622b"></span>Lateral</li>
+          <li><span class="lg-sw" style="background:#8a45b8"></span>Patela</li>
+          <li><span class="lg-sw" style="background:#14946b"></span>Intraartikular</li>
+        </ul>
+      </details>
+      <div class="mi-views" role="group" aria-label="Sudut pandang">
+        <button type="button" data-v="ant">Ant</button>
+        <button type="button" data-v="med">Med</button>
+        <button type="button" data-v="lat">Lat</button>
+        <button type="button" data-v="post">Post</button>
+      </div>
+      <div class="mi-msg" id="loading">Memuat model…</div>
+      <div class="mi-msg" id="err" hidden>Model 3D butuh WebGL dan koneksi ke cdn.jsdelivr.net. Daftar titik di panel tetap bisa dipakai.</div>
+      <div class="mi-hint">Seret untuk putar · cubit/scroll untuk zoom · ketuk titik atau struktur</div>
+      <div class="mi-proc-info" id="procinfo"></div>
+      <button type="button" class="mi-proc-exit" id="procexit" aria-label="Keluar mode prosedur">✕</button>
+    </div>
+
+    <div class="mi-proc" id="procbar">
+      <div class="mi-proc-top">
+        <div class="mi-seg" id="procmode"><button type="button" data-m="simple">Sederhana</button><button type="button" data-m="detail">Detail</button></div>
+        <span>Ketuk regio, lalu ketuk titik</span>
+      </div>
+      <div class="mi-proc-pts" id="procpts"></div>
+      <div class="mi-proc-regions" id="procregions">
+        <button type="button" data-r="med" style="background:#2f6fd6">Medial</button>
+        <button type="button" data-r="lat" style="background:#d9622b">Lateral</button>
+        <button type="button" data-r="pat" style="background:#8a45b8">Patela</button>
+        <button type="button" data-r="ia" style="background:#14946b">IA</button>
+        <button type="button" data-r="all" style="background:#55605d">Semua</button>
+      </div>
+    </div>
+
+    <aside class="mi-panel" aria-label="Detail titik dan sumber">
+      <div class="mi-panel-in">
+        <p class="mi-about" id="about"></p>
+        <article class="mi-card" id="info" aria-live="polite">
+          <h2>Pilih titik</h2>
+          <p class="mi-empty">Ketuk titik berwarna di model, ketuk struktur anatomi untuk melihat namanya, atau pilih dari daftar di bawah.</p>
+        </article>
+
+        <section class="mi-sec">
+          <h3>Daftar titik</h3>
+          <div class="mi-list" id="list"></div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Teknik protokol Rabago</h3>
+          <p>Tiap baris diberi status sesuai hasil pengecekan di PubMed (3 Nov 2026).</p>
+          <div class="mi-scroll">
+            <table class="mi-t" id="tech"></table>
+          </div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Status verifikasi</h3>
+          <div class="mi-list" style="gap:6px">
+            <div><span class="vb v">Terverifikasi</span> Dicek ke abstrak/metadata PubMed dan isinya cocok.</div>
+            <div><span class="vb i">Interpretasi posisi</span> Lokasi titik diturunkan dari deskripsi teks lalu ditempatkan pada landmark mesh. Bukan koordinat baku.</div>
+            <div><span class="vb g">Anatomi umum</span> Pengetahuan anatomi standar, tidak dicek per klaim.</div>
+            <div><span class="vb u">Belum terverifikasi</span> Tidak ditemukan di abstrak PubMed, atau sumbernya buku yang tidak terindeks. Konfirmasi ke teks lengkap sebelum dipakai sebagai acuan.</div>
+          </div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Rujukan</h3>
+          <ol class="mi-refs">
+            <li>Rabago D, et al. Dextrose prolotherapy for knee osteoarthritis: a randomized controlled trial. <i>Ann Fam Med</i> 2013;11:229–37. PMID 23690322. <a href="https://doi.org/10.1370/afm.1504" target="_blank" rel="noopener">doi:10.1370/afm.1504</a><span class="vb v">PubMed</span></li>
+            <li>Rabago D, et al. Hypertonic dextrose injections (prolotherapy) for knee osteoarthritis: single-arm study with 1-year follow-up. <i>J Altern Complement Med</i> 2012;18:408–14. PMID 22515800. <a href="https://doi.org/10.1089/acm.2011.0030" target="_blank" rel="noopener">doi:10.1089/acm.2011.0030</a><span class="vb v">PubMed</span></li>
+            <li>Rabago D, et al. Dextrose and morrhuate sodium injections (prolotherapy) for knee osteoarthritis: prospective open-label trial. <i>J Altern Complement Med</i> 2014;20:383–91. PMID 24635447. <a href="https://doi.org/10.1089/acm.2013.0225" target="_blank" rel="noopener">doi:10.1089/acm.2013.0225</a><span class="vb v">PubMed</span></li>
+            <li>Rabago D, Patterson JJ, Baumgartner JJ. Prolotherapy: a CAM therapy for chronic musculoskeletal pain. Dalam: Lennard TA (ed). <i>Pain Procedures in Clinical Practice</i>, ed. 3. Elsevier; 2011. hlm. 113–130. Sumber posisi titik; tanpa nomor halaman per titik.<span class="vb u">Buku, tidak di PubMed</span></li>
+          </ol>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Kredit mesh &amp; lisensi</h3>
+          <div class="mi-credit">
+            <div><b>Mode Sederhana — BodyParts3D</b><span class="lic">CC BY-SA 2.1 Japan</span>
+              <span>© 2008 Life Science Integrated Database Center (DBCLS). Femur, tibia, fibula, patela, m. sartorius, m. semitendinosus, m. gracilis, m. popliteus, dan traktus iliotibialis (baru, dari mirror github.com/Kevin-Mattheus-Moerman/BodyParts3D). Mesh dipotong, disederhanakan, dihaluskan, dan diselaraskan (ICP). Mesh turunan di halaman ini berlisensi sama (CC BY-SA 2.1 JP).</span>
+              <span>MCL, LCL, tendon patela, dan tendon quadriceps di mode ini adalah gambar skematik, bukan mesh atlas.</span></div>
+            <div><b>Mode Detail — SPL Knee Atlas</b><span class="lic">Lisensi 3D Slicer</span>
+              <span>Surgical Planning Laboratory, Brigham and Women’s Hospital / Harvard Medical School; github.com/mhalle/spl-knee-atlas. 48 struktur hasil segmentasi MRI. Atlas aslinya lutut kiri dan di sini ditampilkan dicerminkan. Field MRI hanya ±6 cm dari joint line, jadi ujung struktur panjang terpotong. Versi ini dibangun ulang dari mesh asli: ±614 ribu segitiga (sebelumnya ±315 ribu), dengan Taubin smoothing ringan.</span></div>
+            <div><b>Perangkat lunak</b><span class="lic">MIT</span><span>three.js r160 (render 3D), meshoptimizer/gltfpack (kompresi mesh).</span></div>
+          </div>
+        </section>
+
+        <section class="mi-sec">
+          <h3>Model lain</h3>
+          <nav class="mi-nav" aria-label="Model injeksi lain">
+            <a href="https://claude.ai/artifact/6jnnsE3gvEhwYNfZw6F4x6" aria-current="page">Lutut (Rabago)</a>
+            <a href="https://claude.ai/artifact/56aTviE2SvCuFzk1wEybnU" target="_blank" rel="noopener">Atlas SIJ</a>
+            <a href="https://claude.ai/artifact/6vcre4QyWMQLU1o9ZN46wc" target="_blank" rel="noopener">Pergelangan tangan</a>
+            <a href="https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW" target="_blank" rel="noopener">Peta nyeri pinggang</a>
+          </nav>
+          <p class="mi-note">Untuk referensi, edukasi, dan pelatihan. Bukan pengganti penilaian klinis, PPK/SPO RS, maupun konfirmasi palpasi dan USG pada pasien.</p>
+        </section>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script id="glb_simple" type="application/octet-stream">@@GLB_SIMPLE@@</script>
+<script id="glb_detail" type="application/octet-stream">@@GLB_DETAIL@@</script>
+<script type="module">
+/*@SHELLJS@*/
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const COLORS = { med:'#2f6fd6', lat:'#d9622b', pat:'#8a45b8', ia:'#14946b' };
+const GROUP_NAME = { med:'Medial', lat:'Lateral', pat:'Patela', ia:'Intraartikular' };
+const VB = { v:'Terverifikasi', p:'Sebagian terverifikasi', u:'Belum terverifikasi', g:'Anatomi umum', i:'Interpretasi posisi' };
+const vb = (k,txt) => `<span class="vb ${k}">${txt||VB[k]}</span>`;
+/*@LMS@*/
+
+// pv = status posisi titik, mv = status catatan
+const POINTS = [
+  { id:'M1', g:'med', n:'Origo proksimal MCL (epikondilus medial femur)', s:'Perlekatan proksimal ligamen kolateral medial di epikondilus medial.', m:'Disebut sebagai salah satu titik nyeri tekan pada kasus contoh di bab Rabago.', mv:'u' },
+  { id:'M2a', g:'med', n:'Kondilus medial femur, aspek superior', s:'Seri titik dari aspek superior kondilus medial, menyusur ke distal sampai joint line.', m:'Satu baris peppering (M2a → M2c).', mv:'u' },
+  { id:'M2b', g:'med', n:'Kondilus medial femur, tengah', s:'Lanjutan seri menyusur femur ke distal.', m:'' },
+  { id:'M2c', g:'med', n:'Kondilus medial femur, dekat joint line', s:'Akhir seri, tepat di atas joint line medial.', m:'' },
+  { id:'M3a', g:'med', n:'Coronary ligament medial', s:'Ligamen koroner yang mengikat meniskus medial ke tibia, di tepi plateau tibia medial.', m:'Beberapa titik di sepanjang tepi plateau.', mv:'u' },
+  { id:'M3b', g:'med', n:'Coronary ligament medial (anteromedial)', s:'Lanjutan titik di tepi anteromedial plateau.', m:'' },
+  { id:'M4', g:'med', n:'Insersi pes anserinus', s:'Perlekatan tendon sartorius, gracilis, dan semitendinosus di tibia anteromedial proksimal.', m:'Titik nyeri tekan pada kasus contoh di bab Rabago. Tingginya dihitung dari ujung distal mesh tendon, sehingga bisa sedikit berbeda dari anatomi pasien.', mv:'u' },
+  { id:'M5', g:'med', n:'Tibia anterior (anteromedial)', s:'Permukaan tibia anterior, medial dari tuberositas.', m:'' },
+  { id:'M6', g:'med', n:'Perlekatan popliteus (tibia posterior)', s:'Perlekatan otot popliteus di permukaan posterior tibia (di bab disebut “medial popliteal attachments”).', m:'Akses posterior: hati-hati berkas neurovaskular poplitea (lihat a./v. poplitea dan n. tibialis di versi Detail). Di praktik USG-guided, titik ini perlu visualisasi.', mv:'u' },
+  { id:'L1a', g:'lat', n:'Kondilus lateral femur, aspek superior', s:'Seri titik di aspek superior kondilus lateral.', m:'' },
+  { id:'L1b', g:'lat', n:'Kondilus lateral femur, tengah', s:'Lanjutan seri ke distal.', m:'' },
+  { id:'L2a', g:'lat', n:'LCL — origo (epikondilus lateral)', s:'Perlekatan proksimal ligamen kolateral lateral.', m:'' },
+  { id:'L2b', g:'lat', n:'LCL — insersi di kaput fibula', s:'Perlekatan distal LCL di aspek lateral kaput fibula.', m:'Hati-hati n. peroneus komunis di posterolateral leher fibula.', mv:'g' },
+  { id:'L3a', g:'lat', n:'Joint line lateral / coronary ligament lateral', s:'Ligamen koroner lateral di tepi plateau tibia lateral.', m:'' },
+  { id:'L3b', g:'lat', n:'Coronary ligament lateral (anterolateral)', s:'Lanjutan titik di tepi anterolateral plateau.', m:'' },
+  { id:'L4a', g:'lat', n:'Kaput fibula — puncak', s:'Puncak kaput fibula.', m:'Hati-hati n. peroneus komunis yang melingkari leher fibula di posterolateral-inferior.', mv:'g' },
+  { id:'L4b', g:'lat', n:'Kaput fibula — tepi anterior', s:'Tepi anterior kaput fibula.', m:'Hindari bergeser ke posterior/inferior (n. peroneus komunis).', mv:'g' },
+  { id:'L5', g:'lat', n:'Ligamen tibiofibular anterior (proksimal)', s:'Ligamen di bagian anterior sendi tibiofibular proksimal.', m:'' },
+  { id:'P1', g:'pat', n:'Retinakulum superomedial', s:'Tepi superomedial patela.', m:'' },
+  { id:'P2', g:'pat', n:'Retinakulum superolateral', s:'Tepi superolateral patela.', m:'' },
+  { id:'P3', g:'pat', n:'Retinakulum inferomedial', s:'Tepi inferomedial patela.', m:'' },
+  { id:'P4', g:'pat', n:'Retinakulum inferolateral', s:'Tepi inferolateral patela.', m:'' },
+  { id:'IA', g:'ia', n:'Intraartikular — pendekatan inferomedial', s:'Pendekatan inferomedial dipakai pada studi Rabago untuk injeksi tunggal 6 mL dekstrosa 25% per sesi.', sv:'v', m:'Bab Rabago juga menyebut portal anteromedial (paling sering) dan superolateral (±1 cm di bawah tepi superior patela, lutut lurus) sebagai alternatif.', mv:'u' },
+];
+const DOSE = {
+  ea:[['Dekstrosa 15% di insersi tendon/ligamen periartikular','v'],['0,2–0,5 mL per titik · peppering · ujung jarum menyentuh tulang','u']],
+  ia:[['6 mL dekstrosa 25%, satu injeksi per sesi, pendekatan inferomedial','v']]
+};
+const TECH = [
+  ['Ekstraartikular: dekstrosa 15% di insersi tendon dan ligamen periartikular','v','Rabago 2012, 2014 (abstrak)'],
+  ['Intraartikular: 6 mL dekstrosa 25%, pendekatan inferomedial','v','Rabago 2014 (abstrak); 25% juga di Rabago 2012'],
+  ['Jadwal: minggu 1, 5, 9; tambahan bila perlu di minggu 13 dan 17','v','Rabago 2013 RCT (abstrak)'],
+  ['Hasil RCT 52 minggu: WOMAC membaik 15,3 poin (dekstrosa) vs 7,6 (salin) vs 8,2 (latihan); tanpa efek samping serius','v','Rabago 2013 (abstrak)'],
+  ['Volume per titik 0,2–0,5 mL, peppering ±tiap 1 cm², ujung jarum menyentuh tulang','u','Tidak tercantum di abstrak; teks lengkap tidak tersedia lewat PMC'],
+  ['Jarum 25G, sampai 15 tusukan, total maksimal 22,5 mL, lidokain akhir ±0,2%','u','Tidak tercantum di abstrak'],
+  ['Satu tusukan kulit untuk beberapa titik (skin sliding); lutut fleksi 90° atau prone','u','Dari bab buku (Lennard 2011), tidak terindeks PubMed'],
+  ['RCT dikerjakan tanpa panduan USG','u','Tidak tercantum di abstrak'],
+  ['Posisi tiap titik pada model','i','Interpretasi deskripsi bab Rabago, dihitung dari landmark mesh (mis. origo MCL/LCL dari ujung proksimal mesh ligamen)'],
+];
+
+const SHORT = { M1:'Origo MCL', M2a:'Kondilus med. superior', M2b:'Kondilus med. tengah', M2c:'Kondilus med. distal',
+  M3a:'Koroner medial', M3b:'Koroner anteromedial', M4:'Pes anserinus', M5:'Tibia anteromedial', M6:'Popliteus (tibia post.)',
+  L1a:'Kondilus lat. superior', L1b:'Kondilus lat. tengah', L2a:'Origo LCL', L2b:'Insersi LCL (fibula)',
+  L3a:'Koroner lateral', L3b:'Koroner anterolateral', L4a:'Puncak kaput fibula', L4b:'Kaput fibula anterior', L5:'Lig. tibiofibular ant.',
+  P1:'Ret. superomedial', P2:'Ret. superolateral', P3:'Ret. inferomedial', P4:'Ret. inferolateral', IA:'IA inferomedial' };
+
+const STRUCT = {
+  femur:'Femur', tibia:'Tibia', fibula:'Fibula', patella:'Patela',
+  sartorius:'M. sartorius', gracilis:'M. gracilis', semitendinosus:'M. semitendinosus', popliteus:'M. popliteus',
+  lateral_meniscus:'Meniskus lateral', medial_meniscus:'Meniskus medial', femoral_cartilage:'Kartilago femur',
+  lateral_tibial_cartilage:'Kartilago tibia lateral', medial_tibial_cartilage:'Kartilago tibia medial', patellar_cartilage:'Kartilago patela',
+  anterior_cruciate_ligament:'Ligamen krusiatum anterior (ACL)', posterior_cruciate_ligament:'Ligamen krusiatum posterior (PCL)',
+  fibular_collateral_ligament:'Ligamen kolateral lateral (LCL / fibular collateral)', tibial_collateral_ligament:'Ligamen kolateral medial (MCL / tibial collateral)',
+  patellar_ligament:'Ligamen/tendon patela', adductor_magnus_tendon:'Tendon adductor magnus', biceps_femoris_tendon:'Tendon biceps femoris',
+  iliotibial_tract:'Traktus iliotibialis', popliteus_tendon:'Tendon popliteus', soleus_tendon:'Tendon soleus',
+  semitendinosus_tendon:'Tendon semitendinosus', gracilis_tendon:'Tendon gracilis',
+  vastus_lateralis_muscle:'M. vastus lateralis', vastus_medialis_muscle:'M. vastus medialis', biceps_femoris_muscle:'M. biceps femoris',
+  semimembranosus_muscle:'M. semimembranosus', semitendinosus_muscle:'M. semitendinosus', gracilis_muscle:'M. gracilis', sartorius_muscle:'M. sartorius',
+  medial_head_gastrocnemius_muscle:'M. gastrocnemius caput medial', lateral_head_gastrocnemius_muscle:'M. gastrocnemius caput lateral',
+  popliteus_muscle:'M. popliteus', soleus_muscle:'M. soleus', tibialis_anterior_muscle:'M. tibialis anterior',
+  extensor_digitorum_longus_muscle:'M. extensor digitorum longus', peroneus_longus_muscle:'M. peroneus longus',
+  peroneus_nerve:'N. peroneus komunis', tibialis_nerve:'N. tibialis', muscular_branches_tibialis_nerve:'Cabang muskular n. tibialis',
+  medial_sural_cutaneous_nerve:'N. kutaneus suralis medial', popliteal_artery:'A. poplitea', popliteal_vein:'V. poplitea',
+  superior_medial_genicular_artery:'A. genikular superomedial', superior_lateral_genicular_artery:'A. genikular superolateral',
+  middle_genicular_artery:'A. genikular media', great_saphenous_vein:'V. safena magna', small_saphenous_vein:'V. safena parva',
+  infrapatellar_fat_body:'Fat pad infrapatela (Hoffa)', schem_MCL:'MCL (skematik)', schem_LCL:'LCL (skematik)',
+  schem_PTEN:'Tendon patela (skematik)', schem_QTEN:'Tendon quadriceps (skematik)'
+};
+const SRC = { simple:'BodyParts3D', detail:'SPL Knee Atlas' };
+
+const LAYERS = {
+  simple: [ ['bone','Tulang',true], ['mus','Otot pes & popliteus',true], ['ten','Traktus iliotibialis',true], ['lig','Ligamen/tendon skematik',true] ],
+  detail: [ ['bone','Tulang',true], ['cart','Kartilago & meniskus',true], ['lig','Ligamen',true], ['ten','Tendon',true],
+            ['mus','Otot',false], ['nerve','Saraf',true], ['vessel','Pembuluh darah',true], ['fat','Fat pad',false] ]
+};
+const SUB = {
+  simple:'Versi sederhana: tulang, otot pes anserinus, popliteus, dan traktus iliotibialis dari BodyParts3D; ligamen kolateral dan tendon patela digambar skematik. Di protokol aslinya titik dipilih dari nyeri tekan saat palpasi.',
+  detail:'Versi detail: SPL Knee Atlas (berbasis MRI) dengan ligamen, meniskus, kartilago, tendon, saraf, dan pembuluh darah. Ketuk struktur untuk melihat namanya.'
+};
+
+const $ = s => document.querySelector(s);
+const stage=$('#stage'), labelsEl=$('#labels'), infoEl=$('#info'), listEl=$('#list');
+const press = (els, fn) => els.forEach(b => b.setAttribute('aria-pressed', String(!!fn(b))));
+MI.initLegend();
+$('#about').textContent=''; 
+
+$('#tech').innerHTML = '<tr><th>Komponen</th><th>Status</th><th>Dasar</th></tr>' + TECH.map(([t,k,src])=>`<tr><td>${t}</td><td>${vb(k)}</td><td style="color:var(--muted)">${src}</td></tr>`).join('');
+
+function renderList(){
+  listEl.innerHTML='';
+  for (const g of ['med','lat','pat','ia']){
+    const h=document.createElement('div'); h.className='mi-grp'; h.textContent=GROUP_NAME[g]; listEl.appendChild(h);
+    for (const p of POINTS.filter(p=>p.g===g)){
+      const r=document.createElement('button'); r.type='button'; r.className='mi-item'; r.dataset.id=p.id;
+      r.innerHTML=`<span class="mi-code" style="background:${COLORS[p.g]}">${p.id}</span><span class="t">${p.n}</span>`;
+      r.onclick=()=>{ select(p.id,true); MI.toStage(); }; listEl.appendChild(r);
+    }
+  }
+}
+renderList();
+function markRow(id){ listEl.querySelectorAll('.mi-item').forEach(r=>r.setAttribute('aria-current', String(r.dataset.id===id))); }
+function doseHtml(p){ return DOSE[p.g==='ia'?'ia':'ea'].map(([t,k])=>`<div>${t} ${vb(k)}</div>`).join(''); }
+function showInfo(p){
+  infoEl.innerHTML=`<div class="mi-card-h"><span class="mi-code" style="background:${COLORS[p.g]}">${p.id}</span><h2>${p.n}</h2></div>
+    <div class="mi-badges">${vb(p.sv||'i', p.sv?'Terverifikasi':'Posisi: interpretasi')}<span class="vb g">${GROUP_NAME[p.g]}</span></div>
+    <p class="lead">${p.s}</p>
+    <dl class="mi-kv">
+      ${p.m?`<div><dt>Catatan ${vb(p.mv||'u')}</dt><dd>${p.m}</dd></div>`:''}
+      <div><dt>Dosis / volume</dt><dd style="display:grid;gap:4px">${doseHtml(p)}</dd></div>
+    </dl>`;
+}
+function showStruct(key){
+  const nm=STRUCT[key]||key.replace(/_/g,' ');
+  infoEl.innerHTML=`<h2>${nm}</h2><div class="mi-badges">${key.startsWith('schem_')?'<span class="vb u">Gambar skematik</span>':`<span class="vb g">Mesh ${SRC[mode]}</span>`}</div><p class="mi-empty">Struktur anatomi. Ketuk titik berwarna untuk detail injeksi.</p>`;
+}
+let mode='simple';
+let select=(id)=>{ const p=POINTS.find(x=>x.id===id); if(p){showInfo(p); markRow(id);} };
+
+let renderer;
+try { renderer=new THREE.WebGLRenderer({antialias:true, alpha:true}); } catch(e){ $('#err').hidden=false; $('#loading').hidden=true; }
+
+if (renderer){
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.82;
+  stage.insertBefore(renderer.domElement, labelsEl);
+  const labelRenderer=new CSS2DRenderer({element:labelsEl});
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(38,1,0.05,100); camera.position.set(2.6,0.7,7.2);
+  const controls=new OrbitControls(camera,renderer.domElement); controls.target.set(0,0,0); controls.enableDamping=true; controls.minDistance=1.5; controls.maxDistance=16;
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  scene.environment=pmrem.fromScene(new RoomEnvironment(renderer),0.04).texture; scene.environmentIntensity=0.3;
+  scene.add(new THREE.HemisphereLight(0xfffaf0,0x6b6458,0.35));
+  const key=new THREE.DirectionalLight(0xfff3e2,1.5); key.position.set(4,7,6); scene.add(key);
+  const fill=new THREE.DirectionalLight(0xe8f0ff,0.45); fill.position.set(-6,1,4); scene.add(fill);
+  const rim=new THREE.DirectionalLight(0xffffff,0.7); rim.position.set(-3,4,-7); scene.add(rim);
+
+  const P=(o)=>new THREE.MeshPhysicalMaterial(Object.assign({side:THREE.DoubleSide,vertexColors:true},o));
+  const MAT = {
+    bone:P({color:0xe4cfa8,roughness:0.6,clearcoat:0.15,clearcoatRoughness:0.6,transparent:true,opacity:1}),
+    cart:P({color:0x8fc0dc,roughness:0.22,clearcoat:0.8,clearcoatRoughness:0.2}),
+    men:P({color:0xc9b996,roughness:0.42,sheen:0.4,sheenColor:0xffffff}),
+    lig:P({color:0xaebfcc,roughness:0.35,clearcoat:0.35,sheen:0.7,sheenRoughness:0.4,sheenColor:0xffffff}),
+    ten:P({color:0xf1e6cc,roughness:0.28,clearcoat:0.45,sheen:0.5,sheenColor:0xffffff}),
+    mus:P({color:0xb04a40,roughness:0.5,sheen:0.6,sheenColor:0xffb3a7,transparent:true,opacity:0.55,depthWrite:false}),
+    nerve:P({color:0xf2c230,roughness:0.35,clearcoat:0.3,emissive:0x3a2c00,emissiveIntensity:0.25}),
+    artery:P({color:0xc8322b,roughness:0.3,clearcoat:0.5}),
+    vein:P({color:0x3b5ba5,roughness:0.3,clearcoat:0.5}),
+    fat:P({color:0xf1d27a,roughness:0.5,transparent:true,opacity:0.45,depthWrite:false}),
+    ligS:new THREE.MeshPhysicalMaterial({color:0xaebfcc,roughness:0.32,clearcoat:0.35,sheen:0.7,sheenColor:0xffffff}),
+    tendonS:new THREE.MeshPhysicalMaterial({color:0xf0e6d2,roughness:0.3,clearcoat:0.4,sheen:0.5,sheenColor:0xffffff,transparent:true,opacity:0.92}),
+  };
+  MAT.itb=MAT.ten.clone(); MAT.itb.transparent=true; MAT.itb.opacity=0.8; MAT.itb.depthWrite=false;
+  const roots={}, layerObjs={simple:{},detail:{}}, pickables={simple:[],detail:[]};
+  function addToLayer(m,layer,obj){ (layerObjs[m][layer]=layerObjs[m][layer]||[]).push(obj); }
+
+  function b64buf(id){ const s=atob(document.getElementById(id).textContent.trim()); const u=new Uint8Array(s.length); for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i); return u.buffer; }
+  const loader=new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+  function loadMode(m){
+    return new Promise((res,rej)=>{
+      if(roots[m]) return res();
+      loader.parse(b64buf('glb_'+m),'',gltf=>{
+        const root=new THREE.Group(); roots[m]=root; scene.add(root);
+        gltf.scene.updateMatrixWorld(true);
+        const meshes=[]; gltf.scene.traverse(o=>{ if(o.isMesh) meshes.push(o); });
+        for(const o of meshes){
+          let nm=o.name||''; if(!nm||/^mesh_\d+$/.test(nm)) nm=(o.parent&&o.parent.name)||nm;
+          let layer, key;
+          if(m==='simple'){ key=nm; layer=['femur','tibia','fibula','patella'].includes(nm)?'bone': nm==='iliotibial_tract'?'ten':'mus'; }
+          else { [layer,key]=nm.split('__'); }
+          let mat=MAT[layer];
+          if(m==='simple'&&layer==='ten') mat=MAT.itb;
+          if(layer==='vessel') mat = key.includes('vein') ? MAT.vein : MAT.artery;
+          if(layer==='cart' && key.includes('meniscus')) mat=MAT.men;
+          if(!o.geometry.attributes.color){ mat=mat.clone(); mat.vertexColors=false; }
+          if(!o.geometry.attributes.normal) o.geometry.computeVertexNormals();
+          o.material=mat; o.userData.key=key;
+          if(layer==='mus'||layer==='fat'||mat.transparent) o.renderOrder=2;
+          root.attach(o); addToLayer(m,layer,o); pickables[m].push(o);
+        }
+        if(m==='simple'){
+          const T=LMS.simple.tubes;
+          const tube=(pts,r,mat,key)=>{ const c=new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p))); const mm=new THREE.Mesh(new THREE.TubeGeometry(c,40,r,12,false),mat); mm.userData.key=key; root.add(mm); addToLayer('simple','lig',mm); pickables.simple.push(mm); };
+          tube(T.MCL,0.07,MAT.ligS,'schem_MCL'); tube(T.LCL,0.05,MAT.ligS,'schem_LCL'); tube(T.PTEN,0.11,MAT.tendonS,'schem_PTEN'); tube(T.QTEN,0.13,MAT.tendonS,'schem_QTEN');
+        }
+        res();
+      }, err=>rej(err));
+    });
+  }
+
+  const oLabels=[];
+  function olabel(txt,pos,dir){ const d=document.createElement('div'); d.className='ol'; d.textContent=txt; const o=new CSS2DObject(d); o.position.set(...pos); scene.add(o); oLabels.push({obj:o,dir:dir?new THREE.Vector3(...dir):null}); }
+  olabel('MEDIAL',[2.3,-1.6,0],[1,0,0]); olabel('LATERAL',[-2.3,-1.6,0],[-1,0,0]); olabel('ANTERIOR',[0,-1.6,2.3],[0,0,1]); olabel('POSTERIOR',[0,-1.6,-2.3],[0,0,-1]); olabel('PROKSIMAL ↑',[0,2.3,0]);
+  oLabels.forEach(o=>o.base=o.obj.position.clone());
+  function placeOLabels(){ const f= mode==='detail'?0.62:1; oLabels.forEach(o=>o.obj.position.copy(o.base).multiplyScalar(f)); }
+
+  const ptGroup=new THREE.Group(); scene.add(ptGroup);
+  const hitTargets=[], objs={};
+  for(const p of POINTS){
+    const col=new THREE.Color(COLORS[p.g]);
+    const mesh=new THREE.Mesh(new THREE.SphereGeometry(p.g==='ia'?0.075:0.055,20,16), new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.35,roughness:0.4}));
+    mesh.renderOrder=5;
+    const hit=new THREE.Mesh(new THREE.SphereGeometry(0.15,10,8), new THREE.MeshBasicMaterial({visible:false})); hit.userData.id=p.id;
+    const d=document.createElement('div'); d.className='pl'; d.textContent=p.id; d.style.background=COLORS[p.g];
+    const lbl=new CSS2DObject(d);
+    ptGroup.add(mesh,hit,lbl); hitTargets.push(hit); objs[p.id]={mesh,hit,lbl,p,el:d};
+  }
+  const needle=new THREE.Mesh(new THREE.CylinderGeometry(0.012,0.012,1,8), new THREE.MeshStandardMaterial({color:0x9aa3ab,metalness:0.8,roughness:0.3}));
+  ptGroup.add(needle);
+  function placePoints(m){
+    const LM=LMS[m]; const bs= m==='detail'?0.6:1;
+    for(const id in objs){ const v=new THREE.Vector3(...LM.points[id]); objs[id].base=bs; objs[id].mesh.scale.setScalar(bs); objs[id].mesh.position.copy(v); objs[id].hit.position.copy(v); objs[id].hit.scale.setScalar(m==='detail'?0.7:1); objs[id].lbl.position.copy(v); }
+    const to=new THREE.Vector3(...LM.notch), ia=new THREE.Vector3(...LM.points.IA);
+    const from=ia.clone().addScaledVector(new THREE.Vector3().subVectors(ia,to).normalize(),1.4);
+    const dir=new THREE.Vector3().subVectors(to,from);
+    needle.scale.set(1,dir.length(),1); needle.position.copy(from).addScaledVector(dir,0.5);
+    needle.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  }
+
+  const groupOn={med:true,lat:true,pat:true,ia:true}; let labelMode='code'; try{ labelMode=localStorage.getItem('rabagoLabel')||'code'; }catch(e){}
+  let labelsOn=labelMode!=='off';
+  const layerOn={simple:{},detail:{}}; for(const m in LAYERS) for(const [k,,on] of LAYERS[m]) layerOn[m][k]=on;
+  function applyLayers(){
+    for(const m in roots){ roots[m].visible=(m===mode); }
+    for(const [k] of LAYERS[mode]) for(const o of (layerObjs[mode][k]||[])) o.visible=layerOn[mode][k];
+  }
+  function renderLayerBar(){
+    const bar=$('#layerbar'); bar.innerHTML='<span class="mi-lab">Lapisan</span>';
+    for(const [k,label] of LAYERS[mode]){
+      const c=document.createElement('button'); c.type='button'; c.className='mi-chip'; c.textContent=label; c.setAttribute('aria-pressed',String(layerOn[mode][k]));
+      c.onclick=()=>{ layerOn[mode][k]=!layerOn[mode][k]; c.setAttribute('aria-pressed',String(layerOn[mode][k])); applyLayers(); };
+      bar.appendChild(c);
+    }
+  }
+  function applyPts(){ for(const id in objs){ const o=objs[id], on=groupOn[o.p.g]; o.mesh.visible=on; o.hit.visible=on; } needle.visible=groupOn.ia; }
+  document.querySelectorAll('[data-g]').forEach(el=>{ el.onclick=()=>{ const g=el.dataset.g; groupOn[g]=!groupOn[g]; el.setAttribute('aria-pressed',String(groupOn[g])); applyPts(); }; });
+  function applyLabelMode(){
+    labelsOn = labelMode!=='off';
+    for(const id in objs){ objs[id].el.textContent = labelMode==='name' ? SHORT[id] : id; }
+    press(document.querySelectorAll('#lblmode button'), b=>b.dataset.l===labelMode);
+  }
+  document.querySelectorAll('#lblmode button').forEach(s=>s.onclick=()=>{ labelMode=s.dataset.l; try{localStorage.setItem('rabagoLabel',labelMode);}catch(e){} applyLabelMode(); });
+  applyLabelMode();
+  $('#tXray').onclick=e=>{ const on=MAT.bone.opacity===1; MAT.bone.opacity=on?0.3:1; MAT.bone.depthWrite=!on; MAT.bone.needsUpdate=true; e.currentTarget.setAttribute('aria-pressed',String(on)); };
+
+  async function setMode(m){
+    mode=m; press(document.querySelectorAll('#mode button'), b=>b.dataset.m===m);
+    $('#sub').textContent=SUB[m]; $('#about').textContent=SUB[m];
+    renderLayerBar();
+    if(!roots[m]){ $('#loading').hidden=false; await new Promise(r=>setTimeout(r,30)); }
+    try{ await loadMode(m); }catch(e){ console.error(e); $('#err').textContent='Mesh anatomi gagal dimuat.'; $('#err').hidden=false; }
+    $('#loading').hidden=true;
+    placePoints(m); applyLayers(); placeOLabels(); view('init');
+    if(selId){ showInfo(objs[selId].p); }
+  }
+  document.querySelectorAll('#mode button').forEach(s=>s.onclick=()=>setMode(s.dataset.m));
+
+  let anim=null;
+  function flyTo(pos,target){ anim={t0:performance.now(),dur:650,fp:camera.position.clone(),ft:controls.target.clone(),tp:new THREE.Vector3(...pos),tt:new THREE.Vector3(...target)}; }
+  const DIR={ant:[0,0,1],med:[1,0,0],lat:[-1,0,0],post:[0,0,-1],init:[0.34,0.09,0.94]};
+  const dist=()=> mode==='detail'?4.6:7.5;
+  const tgt=()=> mode==='detail'?[0,0.1,0]:[0,0,0];
+  function view(v){ const d=DIR[v], D=dist(), t=tgt(); flyTo([t[0]+d[0]*D,t[1]+d[1]*D,t[2]+d[2]*D], t); press(document.querySelectorAll('.mi-views button'), b=>b.dataset.v===v); }
+  document.querySelectorAll('[data-v]').forEach(el=>{ el.onclick=()=>view(el.dataset.v); });
+
+  let selId=null;
+  select=(id,fly)=>{
+    const o=objs[id]; if(!o) return;
+    if(!groupOn[o.p.g]){ groupOn[o.p.g]=true; document.querySelector(`[data-g="${o.p.g}"]`).setAttribute('aria-pressed','true'); applyPts(); }
+    if(selId){ objs[selId].mesh.scale.setScalar(objs[selId].base||1); objs[selId].mesh.material.emissiveIntensity=0.35; }
+    selId=id; o.mesh.material.emissiveIntensity=0.9; showInfo(o.p); markRow(id);
+    if(fly){ const pt=o.mesh.position.clone(); const out=new THREE.Vector3(pt.x,0,pt.z); if(out.lengthSq()<1e-4) out.set(0,0,1); out.normalize();
+      flyTo(pt.clone().addScaledVector(out,mode==='detail'?2.8:4.2).add(new THREE.Vector3(0,0.8,0)).toArray(), pt.toArray()); }
+  };
+
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); let down=null;
+  renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});
+  renderer.domElement.addEventListener('pointerup',e=>{
+    if(!down) return; const mv=Math.hypot(e.clientX-down.x,e.clientY-down.y); down=null; if(mv>6) return;
+    const r=renderer.domElement.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+    ray.setFromCamera(ndc,camera);
+    const hp=ray.intersectObjects(hitTargets.filter(h=>h.visible),false);
+    if(hp.length){ select(hp[0].object.userData.id,false); if(proc) procInfo(objs[hp[0].object.userData.id].p); return; }
+    const hs=ray.intersectObjects((pickables[mode]||[]).filter(o=>o.visible),false);
+    if(hs.length){ showStruct(hs[0].object.userData.key); markRow(null); }
+  });
+
+  function resize(){ const w=stage.clientWidth,h=stage.clientHeight; renderer.setSize(w,h,false); renderer.domElement.style.width=w+'px'; renderer.domElement.style.height=h+'px'; labelRenderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  const clock=new THREE.Clock(), tmpN=new THREE.Vector3(), tmpV=new THREE.Vector3(), cd=new THREE.Vector3();
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  renderer.setAnimationLoop(()=>{
+    const t=clock.getElapsedTime();
+    if(anim){ const k=Math.min(1,(performance.now()-anim.t0)/anim.dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; camera.position.lerpVectors(anim.fp,anim.tp,e); controls.target.lerpVectors(anim.ft,anim.tt,e); if(k>=1) anim=null; }
+    if(selId) objs[selId].mesh.scale.setScalar((objs[selId].base||1)*(reduce?1.5:(1.35+0.25*Math.sin(t*5))));
+    controls.update();
+    const xray=MAT.bone.opacity<1;
+    for(const id in objs){ const o=objs[id];
+      if(!(groupOn[o.p.g]&&labelsOn)){ o.lbl.visible=false; continue; }
+      const pos=o.mesh.position; if(o.p.g==='ia') tmpN.set(0.3,0,1); else tmpN.set(pos.x,0,pos.z); tmpN.normalize();
+      tmpV.subVectors(camera.position,pos).normalize(); o.lbl.visible= xray || id===selId || tmpN.dot(tmpV)>0.1; }
+    cd.subVectors(camera.position,controls.target).normalize();
+    for(const ol of oLabels){ if(!ol.dir) continue; const d=ol.dir.dot(cd); ol.obj.visible=d>-0.6&&d<0.8; }
+    renderer.render(scene,camera); labelRenderer.render(scene,camera);
+  });
+
+  // ===== MODE PROSEDUR =====
+  const app=$('#app'); let proc=false, region='all', savedLabel=null;
+  const PDIR={med:[0.88,0.18,0.45], lat:[-0.88,0.18,0.45], pat:[0,0.3,1], ia:[0.55,0.12,0.85], all:[0.34,0.09,0.94]};
+  let wakeLock=null;
+  async function keepAwake(on){ try{ if(on && 'wakeLock' in navigator){ wakeLock=await navigator.wakeLock.request('screen'); } else if(!on && wakeLock){ await wakeLock.release(); wakeLock=null; } }catch(e){} }
+  function regionView(g){
+    const LM=LMS[mode]; const ids=POINTS.filter(p=>g==='all'||p.g===g).map(p=>p.id);
+    const c=new THREE.Vector3(); ids.forEach(id=>c.add(new THREE.Vector3(...LM.points[id]))); c.divideScalar(ids.length);
+    if(g==='all') c.set(...tgt());
+    const D=(mode==='detail'?3.9:5.6)*(g==='all'?1.3:1); const d=new THREE.Vector3(...PDIR[g]).normalize();
+    flyTo(c.clone().addScaledVector(d,D).toArray(), c.toArray());
+  }
+  function renderProcPts(){
+    const box=$('#procpts'); box.innerHTML='';
+    for(const p of POINTS.filter(p=>region==='all'||p.g===region)){
+      const s=document.createElement('button'); s.type='button'; s.style.background=COLORS[p.g]; s.textContent=SHORT[p.id]; s.dataset.id=p.id;
+      s.setAttribute('aria-pressed',String(p.id===selId));
+      s.onclick=()=>{ select(p.id,false); procInfo(p); press(box.querySelectorAll('button'), x=>x===s); };
+      box.appendChild(s);
+    }
+  }
+  function procInfo(p){
+    const el=$('#procinfo');
+    if(!p){ el.innerHTML=''; return; }
+    el.innerHTML=`<b>${p.n}</b>${p.m?`<br><span style="color:var(--muted)">${p.m}</span>`:''}<br><span style="color:var(--muted)">${DOSE[p.g==='ia'?'ia':'ea'].map(([t,k])=>t+' ('+VB[k].toLowerCase()+')').join(' · ')}</span>`;
+  }
+  function setRegion(g){
+    region=g;
+    for(const k of ['med','lat','pat','ia']){ groupOn[k]=(g==='all'||g===k); const c=document.querySelector(`[data-g="${k}"]`); if(c) c.setAttribute('aria-pressed',String(groupOn[k])); }
+    applyPts();
+    press(document.querySelectorAll('#procregions button'), s=>s.dataset.r===g);
+    procInfo(null); renderProcPts(); regionView(g);
+  }
+  function syncProcMode(){ press(document.querySelectorAll('#procmode button'), s=>s.dataset.m===mode); }
+  function enterProc(){ proc=true; app.classList.add('proc'); savedLabel=labelMode; labelMode='name'; applyLabelMode(); keepAwake(true); syncProcMode(); setTimeout(()=>{ resize(); setRegion(region); },50); }
+  function exitProc(){ proc=false; app.classList.remove('proc'); if(savedLabel){ labelMode=savedLabel; applyLabelMode(); } keepAwake(false); setRegion('all'); setTimeout(resize,50); }
+  $('#procstart').onclick=enterProc;
+  $('#procexit').onclick=exitProc;
+  document.querySelectorAll('#procregions button').forEach(s=>s.onclick=()=>setRegion(s.dataset.r));
+  document.querySelectorAll('#procmode button').forEach(s=>s.onclick=async()=>{ await setMode(s.dataset.m); syncProcMode(); setRegion(region); });
+  document.addEventListener('visibilitychange',()=>{ if(proc && document.visibilityState==='visible') keepAwake(true); });
+
+  const H=(location.hash||'').toLowerCase();
+  setMode(H.includes('detail')?'detail':'simple').then(()=>{ if(H.includes('prosedur')) enterProc(); });
+}
+</script>
