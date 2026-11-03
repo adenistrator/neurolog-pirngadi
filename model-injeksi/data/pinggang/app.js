@@ -299,15 +299,15 @@ function ribbon(top,bot,rows,segs,bulge,side){ // two curves -> plate
 /* ---------- BODY ---------- */
 const body=new THREE.Group();scene.add(body);
 const TS=[
- {y:7.45,hw:.85,df:.5,db:.55,c:.08},{y:7.8,hw:1.42,df:.74,db:.9,c:.22},{y:8.2,hw:1.74,df:.92,db:1.2,c:.34},{y:8.85,hw:1.86,df:1.0,db:1.34,c:.32},
- {y:9.45,hw:1.8,df:1.05,db:1.22,c:.2},{y:10.0,hw:1.66,df:1.05,db:1.0,c:.07},{y:10.6,hw:1.46,df:1.0,db:.86,c:.06},
- {y:11.3,hw:1.5,df:1.02,db:.9,c:.06},{y:12.2,hw:1.62,df:1.12,db:1.0,c:.05},{y:13.2,hw:1.76,df:1.2,db:1.05,c:.05},
+ {y:7.05,hw:.75,df:.4,db:.75,c:.05},{y:7.45,hw:1.226,df:.5,db:1.358,c:.08},{y:7.8,hw:1.562,df:.74,db:1.464,c:.22},{y:8.2,hw:2.312,df:1.018,db:1.664,c:.34},{y:8.85,hw:2.434,df:1.104,db:1.603,c:.32},
+ {y:9.45,hw:2.434,df:1.403,db:1.323,c:.2},{y:10.0,hw:2.153,df:1.242,db:1.011,c:.07},{y:10.6,hw:1.66,df:1.013,db:.86,c:.06},
+ {y:11.3,hw:1.5,df:1.02,db:.9,c:.06},{y:12.2,hw:1.631,df:1.12,db:1.008,c:.05},{y:13.2,hw:1.848,df:1.2,db:1.115,c:.05},
  {y:14.0,hw:1.9,df:1.05,db:1.0,c:.03},{y:14.5,hw:1.74,df:.8,db:.8,c:0},{y:14.85,hw:.85,df:.55,db:.55,c:0},{y:15.05,hw:.5,df:.45,db:.45,c:0}];
 const torso=new THREE.Mesh(loft(sampleSecs(TS,8),72,(s,th)=>{const c=Math.cos(th),sn=Math.sin(th);const x=s.hw*sp(c,2/2.5);const zr=sp(sn,2/2.5);
   let z=zr>0?zr*s.df:zr*s.db; if(z<0) z+=s.c*Math.exp(-Math.pow(x/0.2,2))*Math.abs(zr); return [x,s.y,z];}),skinMat);
 body.add(torso);
-const LS=[{y:9.1,cx:.92,rx:.9,rf:.85,rb:.9},{y:8.2,cx:.92,rx:.9,rf:.9,rb:.95},{y:7.2,cx:.88,rx:.8,rf:.82,rb:.82},{y:6.1,cx:.8,rx:.66,rf:.7,rb:.66},
- {y:5.1,cx:.74,rx:.53,rf:.56,rb:.52},{y:4.5,cx:.72,rx:.5,rf:.5,rb:.58},{y:3.7,cx:.7,rx:.52,rf:.45,rb:.7},{y:2.6,cx:.68,rx:.43,rf:.38,rb:.52},
+const LS=[{y:9.1,cx:1.15,rx:1.0,rf:.85,rb:.9},{y:8.2,cx:1.25,rx:1.062,rf:.9,rb:1.608},{y:7.2,cx:1.3,rx:.973,rf:.82,rb:1.315},{y:6.1,cx:1.25,rx:.68,rf:.7,rb:.7},
+ {y:5.1,cx:1.05,rx:.55,rf:.56,rb:.52},{y:4.5,cx:.85,rx:.5,rf:.5,rb:.58},{y:3.7,cx:.7,rx:.52,rf:.45,rb:.7},{y:2.6,cx:.68,rx:.43,rf:.38,rb:.52},
  {y:1.5,cx:.66,rx:.3,rf:.3,rb:.34},{y:.8,cx:.65,rx:.28,rf:.28,rb:.3},{y:.35,cx:.65,rx:.32,rf:.34,rb:.4}].reverse();
 const bodyMeshes=[torso];
 [-1,1].forEach(sd=>{
@@ -399,6 +399,9 @@ scene.updateMatrixWorld(true);
 
 /* ---------- DETAIL ANATOMY: BodyParts3D bones/muscles + Z-Anatomy nerves (replaces schematic parts) ---------- */
 const anatD=new THREE.Group();scene.add(anatD);anatD.visible=false;
+// schematic pelvic/hip parts widened to match the reshaped (wider) body
+const WIDEN=1.2, WKEYS=/^(ilium|crest|ischium|pubis|hipj|femneck|gt|femur|gmed|gmin|piri|sgn|sciatic)$/;
+REG.forEach(r=>{ if(WKEYS.test(r.key)){ r.mesh.position.x*=WIDEN; r.mesh.scale.x*=WIDEN; } });
 const DREPL=/^(vb|sp|lam|ped|tp|disc):|^(sacrum|coccyx|ilium|crest|ischium|pubis|hipj|femneck|femur|piri|ql|psoas|erector|gmed|gmin|sciatic|sgn)$/;
 REG.forEach(r=>{ r.keep = r.key==='gt' && r.mesh.material.color.getHex()===0xa78bfa; });
 const DCOL={bone:0xe9e2cf,disc:0x7fb3d5,mus:0xb5524e,nerve:0xf6d743};
@@ -762,6 +765,7 @@ const PMAP={facet:{L1:['mbb:L1L2','fia:L1'],L2:['mbb:L2L3','fia:L2'],L3:['mbb:L3
   disc:{},radic:{_:['caudal','tfesi']},stenosis:{_:['caudal']},maigne:{_:['mbb:T12L1','scn']},sij:{_:['sij']},piri:{_:['piri']},sgn:{_:['sgn']},scn:{_:['scn']},mcn:{_:['mcn']},
   myo:{QL:['ql'],GMED:['gmed'],GMIN:['gmin'],PSOAS:['psoas'],ES:['es']},gtps:{_:['gt','sgn']},hip:{_:['hip']}};
 function procsFor(dx,v){const m=PMAP[dx]||{};return m[v]||m._||[];}
+['gt','gmed','gmin','piri','sgn','hip'].forEach(id=>PROC[id].p3.tgt.forEach(t=>{t[0]*=WIDEN;}));
 
 /* ---------- 3D overlay ---------- */
 const injGroup=new THREE.Group();scene.add(injGroup);
@@ -868,7 +872,7 @@ function staticHTML(){return `<div class="card warn"><h3>Red flags — singkirka
   <li>Cauda equina: retensi urin, saddle anesthesia, defisit bilateral progresif</li><li>Riwayat keganasan, penurunan berat badan, nyeri malam konstan</li>
   <li>Demam, imunosupresi, IDU → infeksi (spondilodiskitis, abses epidural)</li><li>Trauma / osteoporosis / steroid kronik → fraktur</li>
   <li>Nyeri non-spinal: AAA, ginjal, ginekologi, retroperitoneal</li></ul></div>
-  <div class="card"><h3 style="margin-top:0">Catatan penggunaan</h3><p class="note">Peta menunjukkan pola tipikal untuk edukasi dan penalaran klinis. Variasi individual besar dan pola antar-generator tumpang tindih; peta ini bukan alat diagnosis tunggal. Model tubuh skematik (1 unit ≈ 10 cm), bukan anatomi presisi.</p></div>`;}
+  <div class="card"><h3 style="margin-top:0">Catatan penggunaan</h3><p class="note">Peta menunjukkan pola tipikal untuk edukasi dan penalaran klinis. Variasi individual besar dan pola antar-generator tumpang tindih; peta ini bukan alat diagnosis tunggal. Model tubuh skematik, bukan anatomi presisi. Proporsi pinggul, bokong, dan paha disesuaikan (Nov 2026) supaya tulang dan otot BodyParts3D di mode Detail berada di dalam kulit.</p></div>`;}
 function renderPanel(){
   let h='';
   if(S.mode==='dx'){h=chipsHTML(S.dx,false)+cardHTML(DXM[S.dx]);}

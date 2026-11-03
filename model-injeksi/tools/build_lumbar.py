@@ -38,12 +38,12 @@ def add(key,m,TT,n,ymin=None,ymax=None,side=None):
 for lv,n in VERT: add('vb:'+lv,ld(n),T,9000,side='C')
 for lv,n in DISC: add('disc:'+lv,ld(n),T,3000,side='C')
 add('sacrum',ld(16202),T,16000,side='C')
-for key,ids,n,ymin,ymax in [('hip',(16586,16587),12000,None,None),('femur',(24474,24475),6000,5.0,None),('psoas',(22342,22343),6000,None,None),('ql',(22348,22349),5000,None,None),
+for key,ids,n,ymin,ymax in [('hip',(16586,16587),12000,None,None),('femur',(24474,24475),6000,6.6,None),('psoas',(22342,22343),6000,None,None),('ql',(22348,22349),5000,None,None),
     ('iliacus',(22322,22323),5000,None,None),('erector',(22740,22741,22751,22753),6000,None,13.6),('multifidus',(22878,22879),6000,None,13.6),
     ('piri',(22340,22341),5000,None,None),('gmax',(22328,22329),7000,None,None),('gmed',(22330,22331),7000,None,None),('gmin',(22332,22333),7000,None,None)]:
     for i in ids: add(key,ld(i),T,n,ymin,ymax)
 got=za_extract(f'{SP}/za/NervousSystem100.glb',{'Sciatic nerve.r','Sciatic nerve.l','Superior gluteal nerve.r','Superior gluteal nerve.l'})
-for nm,m in got.items(): add('sciatic' if 'Sciatic' in nm else 'sgn', m, Tz, 5000, ymin=5.0)
+for nm,m in got.items(): add('sciatic' if 'Sciatic' in nm else 'sgn', m, Tz, 5000, ymin=6.6)
 print('total tris',tot); sc.export(f'{SP}/lumbar/detail_raw.glb')
 for k,g in sc.geometry.items():
     if k.split('|')[0] in ('vb:L5','vb:L1','sacrum','hip','femur','sciatic','psoas'): print(k, g.bounds.round(2).tolist())

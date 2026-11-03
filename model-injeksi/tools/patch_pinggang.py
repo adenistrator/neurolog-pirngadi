@@ -22,6 +22,22 @@ R = [
  ("    document.getElementById('panel').scrollTop=0;}", "    const pn=document.getElementById('panel'); if(innerWidth>=900) pn.scrollTop=0; else MI.toStage();}"),
  ("const ray=new THREE.Raycaster();\nscene.updateMatrixWorld(true);", "const ray=new THREE.Raycaster();\nscene.updateMatrixWorld(true);\n/*@DETAIL@*/"),
  ("resize();apply();view('P');requestAnimationFrame(loop);", "resize();apply();view('P');requestAnimationFrame(loop);\ninitDetail();"),
+
+ # --- body reshaped so BodyParts3D/Z-Anatomy detail anatomy sits inside the skin (fitted by tools/body_autofit.py)
+ ("""const TS=[
+ {y:7.45,hw:.85,df:.5,db:.55,c:.08},{y:7.8,hw:1.42,df:.74,db:.9,c:.22},{y:8.2,hw:1.74,df:.92,db:1.2,c:.34},{y:8.85,hw:1.86,df:1.0,db:1.34,c:.32},
+ {y:9.45,hw:1.8,df:1.05,db:1.22,c:.2},{y:10.0,hw:1.66,df:1.05,db:1.0,c:.07},{y:10.6,hw:1.46,df:1.0,db:.86,c:.06},
+ {y:11.3,hw:1.5,df:1.02,db:.9,c:.06},{y:12.2,hw:1.62,df:1.12,db:1.0,c:.05},{y:13.2,hw:1.76,df:1.2,db:1.05,c:.05},""",
+  """const TS=[
+ {y:7.05,hw:.75,df:.4,db:.75,c:.05},{y:7.45,hw:1.226,df:.5,db:1.358,c:.08},{y:7.8,hw:1.562,df:.74,db:1.464,c:.22},{y:8.2,hw:2.312,df:1.018,db:1.664,c:.34},{y:8.85,hw:2.434,df:1.104,db:1.603,c:.32},
+ {y:9.45,hw:2.434,df:1.403,db:1.323,c:.2},{y:10.0,hw:2.153,df:1.242,db:1.011,c:.07},{y:10.6,hw:1.66,df:1.013,db:.86,c:.06},
+ {y:11.3,hw:1.5,df:1.02,db:.9,c:.06},{y:12.2,hw:1.631,df:1.12,db:1.008,c:.05},{y:13.2,hw:1.848,df:1.2,db:1.115,c:.05},"""),
+ ("""const LS=[{y:9.1,cx:.92,rx:.9,rf:.85,rb:.9},{y:8.2,cx:.92,rx:.9,rf:.9,rb:.95},{y:7.2,cx:.88,rx:.8,rf:.82,rb:.82},{y:6.1,cx:.8,rx:.66,rf:.7,rb:.66},
+ {y:5.1,cx:.74,rx:.53,rf:.56,rb:.52},{y:4.5,cx:.72,rx:.5,rf:.5,rb:.58},""",
+  """const LS=[{y:9.1,cx:1.15,rx:1.0,rf:.85,rb:.9},{y:8.2,cx:1.25,rx:1.062,rf:.9,rb:1.608},{y:7.2,cx:1.3,rx:.973,rf:.82,rb:1.315},{y:6.1,cx:1.25,rx:.68,rf:.7,rb:.7},
+ {y:5.1,cx:1.05,rx:.55,rf:.56,rb:.52},{y:4.5,cx:.85,rx:.5,rf:.5,rb:.58},"""),
+ ("Model tubuh skematik (1 unit ≈ 10 cm), bukan anatomi presisi.", "Model tubuh skematik, bukan anatomi presisi. Proporsi pinggul, bokong, dan paha disesuaikan (Nov 2026) supaya tulang dan otot BodyParts3D di mode Detail berada di dalam kulit."),
+ ("function procsFor(dx,v){const m=PMAP[dx]||{};return m[v]||m._||[];}", "function procsFor(dx,v){const m=PMAP[dx]||{};return m[v]||m._||[];}\n['gt','gmed','gmin','piri','sgn','hip'].forEach(id=>PROC[id].p3.tgt.forEach(t=>{t[0]*=WIDEN;}));"),
 ]
 for a, b in R:
     n = s.count(a)
@@ -30,6 +46,9 @@ for a, b in R:
 DETAIL = r'''
 /* ---------- DETAIL ANATOMY: BodyParts3D bones/muscles + Z-Anatomy nerves (replaces schematic parts) ---------- */
 const anatD=new THREE.Group();scene.add(anatD);anatD.visible=false;
+// schematic pelvic/hip parts widened to match the reshaped (wider) body
+const WIDEN=1.2, WKEYS=/^(ilium|crest|ischium|pubis|hipj|femneck|gt|femur|gmed|gmin|piri|sgn|sciatic)$/;
+REG.forEach(r=>{ if(WKEYS.test(r.key)){ r.mesh.position.x*=WIDEN; r.mesh.scale.x*=WIDEN; } });
 const DREPL=/^(vb|sp|lam|ped|tp|disc):|^(sacrum|coccyx|ilium|crest|ischium|pubis|hipj|femneck|femur|piri|ql|psoas|erector|gmed|gmin|sciatic|sgn)$/;
 REG.forEach(r=>{ r.keep = r.key==='gt' && r.mesh.material.color.getHex()===0xa78bfa; });
 const DCOL={bone:0xe9e2cf,disc:0x7fb3d5,mus:0xb5524e,nerve:0xf6d743};
