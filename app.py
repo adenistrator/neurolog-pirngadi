@@ -213,6 +213,17 @@ with tab6:
     st.caption("Klik titik injeksi: klik pertama = gambaran USG, klik kedua = diagram anatomi berwarna.")
     atlas_path = Path(__file__).parent / "assets" / "sij_injection_atlas.html"
     if atlas_path.exists():
-        components.html(atlas_path.read_text(encoding="utf-8"), height=1900, scrolling=True)
+        # Gambar USG asli opsional: assets/usg/IA.jpg, PA.png, LDL.jpg, LB.jpg, L5.png
+        real_us = {}
+        usg_dir = atlas_path.parent / "usg"
+        mimes = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+        if usg_dir.is_dir():
+            for f in usg_dir.iterdir():
+                if f.suffix.lower() in mimes and f.stem.upper() in {"IA", "PA", "LDL", "LB", "L5"}:
+                    b64 = base64.b64encode(f.read_bytes()).decode()
+                    real_us[f.stem.upper()] = f"data:{mimes[f.suffix.lower()]};base64,{b64}"
+        import json
+        preset = f"<script>window.REAL_US = {json.dumps(real_us)};</script>"
+        components.html(preset + atlas_path.read_text(encoding="utf-8"), height=2000, scrolling=True)
     else:
         st.error("File assets/sij_injection_atlas.html tidak ditemukan.")
