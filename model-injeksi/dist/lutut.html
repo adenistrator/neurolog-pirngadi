@@ -374,7 +374,7 @@ const MI = {
   reduce: matchMedia('(prefers-reduced-motion: reduce)').matches,
   // on phones the panel sits under the stage: bring the stage back after picking from a list
   toStage(){
-    if (innerWidth >= 900) return;
+    if (innerWidth >= 900) { const pn = document.querySelector('.mi-panel'); if (pn) pn.scrollTo({ top: 0, behavior: MI.reduce ? 'auto' : 'smooth' }); return; }
     const st = document.querySelector('.mi-stage'), hd = document.querySelector('.mi-head');
     const top = st.getBoundingClientRect().top + scrollY - (hd ? hd.offsetHeight : 0);
     scrollTo({ top: Math.max(0, top), behavior: MI.reduce ? 'auto' : 'smooth' });
