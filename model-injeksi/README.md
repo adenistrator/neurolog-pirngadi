@@ -7,7 +7,7 @@ Empat model 3D interaktif untuk referensi, edukasi pasien, dan pelatihan. Semuan
 | Lutut (Rabago) | https://claude.ai/artifact/6jnnsE3gvEhwYNfZw6F4x6 | `src/lutut.html` | BodyParts3D | SPL Knee Atlas |
 | Atlas SIJ | https://claude.ai/artifact/56aTviE2SvCuFzk1wEybnU | `src/sij.html` | BodyParts3D | BodyParts3D + Z-Anatomy |
 | Pergelangan tangan | https://claude.ai/artifact/6vcre4QyWMQLU1o9ZN46wc | `src/wrist.html` | BodyParts3D | BodyParts3D + Z-Anatomy |
-| Peta nyeri pinggang | https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW | `src/pinggang.html` | skematik prosedural | BodyParts3D + Z-Anatomy |
+| Peta nyeri pinggang | https://claude.ai/artifact/XHZ3TA7KzVjZ1v6oma6jZW | `src/pinggang.html` | skematik prosedural + overlay patologi (facet arthropathy, spinal stenosis) | BodyParts3D + Z-Anatomy |
 
 ## Struktur
 

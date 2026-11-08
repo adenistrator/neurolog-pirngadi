@@ -28,21 +28,22 @@ const REFS={
 const U='<span class="pill usg">USG</span>', F='<span class="pill flu">Fluoro</span>', LIM='<span class="pill lim">evidens terbatas</span>';
 
 const DX=[
-{ id:'facet', grp:'Spinal', name:'Lumbar facet joint pain', side:'uni',
+{ id:'facet', grp:'Spinal', name:'Facet joint arthropathy (lumbal)', side:'uni',
   loc:'Paraspinal ± bokong/paha; jarang di bawah lutut',
-  gen:'Sendi zigapofisial (faset) lumbal. Inervasi ganda dari medial branch ramus dorsalis level yang sama dan level di atasnya (mis. faset L4–L5 ← MB L3 & L4; L5–S1 ← MB L4 & ramus dorsal L5).',
+  gen:'Osteoartritis sendi zigapofisial (faset) lumbal: hipertrofi artikular, osteofit, kapsul/sinovitis. Inervasi ganda dari medial branch ramus dorsalis level yang sama dan level di atasnya (mis. faset L4–L5 ← MB L3 & L4; L5–S1 ← MB L4 & ramus dorsal L5).',
   pat:'Nyeri paraspinal (uni/bilateral) dengan rujukan ke bokong ± paha posterior/lateral, kadang groin. Level atas cenderung ke flank/bokong atas, level bawah ke bokong/paha. Overlap antar level besar — pola tidak cukup untuk menentukan level secara pasti.',
-  feat:['Nyeri aksial > nyeri tungkai','Memberat saat ekstensi/rotasi, berdiri lama; kaku pagi','Nyeri tekan paraspinal di atas faset','Tanpa defisit neurologis'],
+  feat:['Nyeri aksial > nyeri tungkai','Memberat saat ekstensi/rotasi, berdiri lama; kaku pagi','Nyeri tekan paraspinal di atas faset','Tanpa defisit neurologis','MRI/CT: hipertrofi faset ± osteofit (korelasi klinis wajib)'],
   tests:['Extension–rotation (facet loading) hanya pendukung; tidak ada tes klinis tunggal yang andal','Diagnosis ditegakkan dengan respons blok'],
   conf:'Medial branch block (MBB), idealnya dual comparative block sebelum RFA; ambang relief mengikuti guideline yang dipakai.',
   intv:['MBB / injeksi intra-artikular faset '+U+' (L1–L4 cukup feasible); level L5 & pasien obes '+F+' lebih andal','RF neurotomi medial branch '+F,'Proloterapi dekstrosa kapsul faset '+LIM],
   refs:['fukui','mccall'],
+  pathViz:'Model 3D menampilkan faset hipertrofik (coklat-oranye) dan osteofit di level terpilih — ilustrasi arthropathy, bukan rekonstruksi MRI pasien.',
   vars:[
-   {id:'L1',label:'L1–L2',focus:['facet:L1'],z:[E('P',.45,11.6,.42,.4,1,'p'),E('P',1.3,11.15,.45,.55,.7,'r'),E('L',-.3,11.0,.5,.5,.5,'r'),E('P',1.0,10.15,.5,.35,.45,'r')]},
-   {id:'L2',label:'L2–L3',focus:['facet:L2'],z:[E('P',.45,11.15,.42,.4,1,'p'),E('P',1.25,10.8,.45,.5,.65,'r'),E('P',1.0,9.85,.55,.4,.6,'r'),E('L',-.2,9.0,.4,.45,.35,'r')]},
-   {id:'L3',label:'L3–L4',focus:['facet:L3'],z:[E('P',.45,10.7,.42,.4,1,'p'),E('P',1.0,9.5,.6,.45,.75,'r'),E('L',-.1,8.6,.4,.5,.45,'r'),C('L',0,8.2,0,6.8,.35,.35,'r'),E('A',.9,8.55,.35,.3,.3,'r')]},
-   {id:'L4',label:'L4–L5',focus:['facet:L4'],z:[E('P',.45,10.25,.42,.4,1,'p'),E('P',.95,9.2,.65,.5,.85,'r'),C('P',.9,8.1,.88,6.6,.4,.5,'r'),C('L',-.1,8.0,-.05,6.6,.3,.3,'r'),E('A',.9,8.55,.35,.3,.28,'r')]},
-   {id:'L5',label:'L5–S1',focus:['facet:L5'],z:[E('P',.42,9.95,.42,.4,1,'p'),E('P',.9,9.0,.65,.55,.9,'r'),C('P',.9,8.0,.85,6.0,.4,.6,'r'),C('P',.8,5.0,.75,4.2,.35,.2,'r'),E('A',.9,8.55,.35,.3,.25,'r')]},
+   {id:'L1',label:'L1–L2',focus:['facet:L1','path:facet:L1','path:osteo:L1'],z:[E('P',.45,11.6,.42,.4,1,'p'),E('P',1.3,11.15,.45,.55,.7,'r'),E('L',-.3,11.0,.5,.5,.5,'r'),E('P',1.0,10.15,.5,.35,.45,'r')]},
+   {id:'L2',label:'L2–L3',focus:['facet:L2','path:facet:L2','path:osteo:L2'],z:[E('P',.45,11.15,.42,.4,1,'p'),E('P',1.25,10.8,.45,.5,.65,'r'),E('P',1.0,9.85,.55,.4,.6,'r'),E('L',-.2,9.0,.4,.45,.35,'r')]},
+   {id:'L3',label:'L3–L4',focus:['facet:L3','path:facet:L3','path:osteo:L3'],z:[E('P',.45,10.7,.42,.4,1,'p'),E('P',1.0,9.5,.6,.45,.75,'r'),E('L',-.1,8.6,.4,.5,.45,'r'),C('L',0,8.2,0,6.8,.35,.35,'r'),E('A',.9,8.55,.35,.3,.3,'r')]},
+   {id:'L4',label:'L4–L5',focus:['facet:L4','path:facet:L4','path:osteo:L4'],z:[E('P',.45,10.25,.42,.4,1,'p'),E('P',.95,9.2,.65,.5,.85,'r'),C('P',.9,8.1,.88,6.6,.4,.5,'r'),C('L',-.1,8.0,-.05,6.6,.3,.3,'r'),E('A',.9,8.55,.35,.3,.28,'r')]},
+   {id:'L5',label:'L5–S1',focus:['facet:L5','path:facet:L5','path:osteo:L5'],z:[E('P',.42,9.95,.42,.4,1,'p'),E('P',.9,9.0,.65,.55,.9,'r'),C('P',.9,8.0,.85,6.0,.4,.6,'r'),C('P',.8,5.0,.75,4.2,.35,.2,'r'),E('A',.9,8.55,.35,.3,.25,'r')]},
   ], def:'L4'},
 
 { id:'disc', grp:'Spinal', name:'Nyeri diskogenik', side:'bi',
@@ -79,14 +80,24 @@ const DX=[
 
 { id:'stenosis', grp:'Spinal', name:'Lumbar spinal stenosis', side:'bi',
   loc:'Bokong–paha–tungkai bilateral saat berdiri/berjalan',
-  gen:'Penyempitan kanal sentral / lateral recess (hipertrofi ligamentum flavum, faset, protrusi diskus) → kompresi & iskemia cauda equina.',
+  gen:'Penyempitan kanal sentral / lateral recess akibat hipertrofi ligamentum flavum, facet arthropathy, dan protrusi diskus → kompresi & iskemia cauda equina / radiks.',
   pat:'Klaudikasio neurogenik: nyeri, rasa berat, kesemutan bokong–paha–tungkai (sering bilateral, difus, tidak selalu dermatomal) saat berdiri/berjalan; membaik dengan duduk atau fleksi ("shopping-cart sign").',
   feat:['Usia lanjut','Tidak nyeri saat duduk','Wide-based gait, Romberg abnormal','Nyeri paha setelah ekstensi lumbal 30 detik'],
   tests:['Prediktor anamnesis/pemeriksaan fisik pada Katz 1995 (di atas)','Singkirkan klaudikasio vaskular: nadi perifer, ABI'],
   conf:'MRI lumbal dengan korelasi klinis.',
   intv:['Interlaminar ESI '+F+' atau caudal ESI '+U,'Program rehabilitasi berbasis fleksi','Rujuk bedah bila defisit progresif atau tanda cauda equina'],
   refs:['katz'],
-  vars:[{id:'L4',label:'L4–L5',focus:['canal'],z:[E('P',0,10.3,.7,.5,.55,'p'),E('P',.9,9.1,.6,.5,.65,'n'),C('P',.9,8.0,.85,5.4,.4,.6,'n'),C('L',-.1,8.0,-.05,5.4,.3,.45,'n'),C('P',.72,4.6,.68,1.4,.3,.5,'n'),C('A',.9,4.6,.8,1.4,.25,.35,'n')]}], def:'L4'},
+  pathViz:'Model 3D menampilkan penyempitan thecal sac (merah), ligamentum flavum menebal, dan faset hipertrofik di level terpilih. Pilih subtipe sentral vs lateral recess di atas.',
+  vars:[
+   {id:'L3',label:'L3–L4 sentral',focus:['canal','path:sten:L3','path:lf:L3','path:facet:L3','path:osteo:L3'],note:'Stenosis kanal sentral L3–L4: LF menebal + faset hipertrofik menyempitkan kantong dural.',
+    z:[E('P',0,10.7,.7,.5,.55,'p'),E('P',.9,9.4,.6,.5,.6,'n'),C('P',.9,8.2,.85,5.6,.4,.55,'n'),C('L',-.1,8.2,-.05,5.6,.3,.4,'n'),C('P',.72,4.6,.68,1.4,.3,.45,'n')]},
+   {id:'L4',label:'L4–L5 sentral',focus:['canal','path:sten:L4','path:lf:L4','path:facet:L4','path:osteo:L4'],note:'Level paling sering: kanal sentral L4–L5 menyempit oleh LF + facet arthropathy.',
+    z:[E('P',0,10.3,.7,.5,.55,'p'),E('P',.9,9.1,.6,.5,.65,'n'),C('P',.9,8.0,.85,5.4,.4,.6,'n'),C('L',-.1,8.0,-.05,5.4,.3,.45,'n'),C('P',.72,4.6,.68,1.4,.3,.5,'n'),C('A',.9,4.6,.8,1.4,.25,.35,'n')]},
+   {id:'L5',label:'L5–S1 sentral',focus:['canal','path:sten:L5','path:lf:L5','path:facet:L5','path:osteo:L5'],note:'Stenosis sentral L5–S1; sering bersama degenerasi diskus L5–S1.',
+    z:[E('P',0,9.95,.7,.5,.55,'p'),E('P',.9,9.0,.6,.5,.65,'n'),C('P',.9,8.0,.85,5.4,.4,.6,'n'),C('L',-.1,8.0,-.05,5.4,.3,.45,'n'),C('P',.72,4.6,.68,1.4,.3,.5,'n')]},
+   {id:'REC4',label:'L4–L5 lateral recess',focus:['path:recess:L4','path:facet:L4','path:osteo:L4','root:L5'],note:'Stenosis lateral recess: faset inferior hipertrofik menekan radiks di recess; gejala sering lebih radikular daripada klaudikasio murni.',
+    z:[E('P',.35,10.25,.45,.4,.7,'p'),E('P',.95,9.1,.55,.45,.7,'n'),C('P',.9,8.0,.85,5.4,.35,.65,'n'),C('L',-.15,8.0,-.05,5.4,.28,.5,'n'),C('P',.72,4.6,.68,1.4,.28,.45,'n')]},
+  ], def:'L4'},
 
 { id:'maigne', grp:'Spinal', name:'Sindrom Maigne (thoracolumbar junction)', side:'uni',
   loc:'Krista iliaka & bokong atas; ± trokanter, groin',
@@ -391,6 +402,66 @@ ORDER.forEach((lv,i)=>{
 // thecal sac / canal
 addA(new THREE.Mesh(tube([[0,12.6,bz(12.6)-.36],[0,11.4,bz(11.4)-.38],[0,10.4,bz(10.4)-.38],[0,9.5,-.32]],u=>.11-.03*u,40,14),mk(NERV,.9)),'canal');
 
+/* ---------- PATHOLOGY overlays: facet arthropathy + spinal stenosis (schematic) ---------- */
+const PATH_COL={oa:0xc47a4a, osteo:0xd9c49a, lf:0x8a6540, sten:0xe85d4c, recess:0xf0a060};
+const PATH=[]; // registry entries with .path=true
+function addPath(mesh,key,kind,level,side='C'){
+  mesh.visible=false; mesh.renderOrder=3;
+  anat.add(mesh);
+  const r={key,side,mesh,base:mesh.material.emissive.clone(),path:true,kind,level};
+  REG.push(r); PATH.push(r); return mesh;
+}
+const PATH_LV=['L1','L2','L3','L4','L5'];
+PATH_LV.forEach(lv=>{
+  const yUpper=LV[lv], yLower=lv==='L5'?9.62:LV[PATH_LV[PATH_LV.indexOf(lv)+1]||'L5'];
+  const ym=lv==='L5'?9.8:(yUpper+yLower)/2, z=bz(ym), isL5=lv==='L5';
+  [-1,1].forEach(sd=>{
+    const S2=sd<0?'R':'L';
+    // Hypertrophic arthropathic facet (larger, inflamed)
+    const f=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),mk(PATH_COL.oa,.96));
+    f.scale.set(isL5?.13:.12,.22,.16); f.position.set(sd*(isL5?.24:.21),ym+.02,z-(isL5?.5:.47));
+    addPath(f,'path:facet:'+lv,'facet',lv,S2);
+    // Marginal osteophyte
+    const o=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),mk(PATH_COL.osteo,.92));
+    o.scale.set(.055,.09,.065); o.position.set(sd*(isL5?.29:.26),ym+.14,z-(isL5?.46:.43));
+    addPath(o,'path:osteo:'+lv,'osteo',lv,S2);
+    // Lateral recess pinch (inferior articular process encroachment)
+    const rec=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),mk(PATH_COL.recess,.8));
+    rec.scale.set(.045,.11,.08); rec.position.set(sd*.13,ym-.02,z-.37);
+    addPath(rec,'path:recess:'+lv,'recess',lv,S2);
+  });
+  // Thickened ligamentum flavum (posterior to canal)
+  const lf=new THREE.Mesh(new THREE.BoxGeometry(.4,.2,.1),mk(PATH_COL.lf,.9));
+  lf.position.set(0,ym,z-.41); addPath(lf,'path:lf:'+lv,'lf',lv);
+  // Stenotic / pinched thecal sac segment
+  const st=new THREE.Mesh(new THREE.CylinderGeometry(.04,.048,.24,18),mk(PATH_COL.sten,.88));
+  st.position.set(0,ym,z-.36); addPath(st,'path:sten:'+lv,'sten',lv);
+});
+function pathDxIds(){return S.mode==='cmp'?S.cmp.slice():(S.mode==='dx'?[S.dx]:[]);}
+function stenLevel(v){return v==='REC4'?'L4':v;}
+function applyPathology(){
+  const ids=pathDxIds(), wantF=ids.includes('facet'), wantS=ids.includes('stenosis');
+  const fLv=wantF?S.vars.facet:null, sVar=wantS?S.vars.stenosis:null, sLv=sVar?stenLevel(sVar):null;
+  PATH.forEach(r=>{
+    let show=false;
+    if(wantF && (r.kind==='facet'||r.kind==='osteo') && r.level===fLv){
+      const es=effSide(DXM.facet); show=(r.side==='C'||es==='B'||r.side===es);
+    }
+    if(wantS && sLv){
+      if((r.kind==='sten'||r.kind==='lf') && r.level===sLv && sVar!=='REC4') show=true;
+      if(r.kind==='recess' && sVar==='REC4' && r.level==='L4') show=true;
+      if((r.kind==='facet'||r.kind==='osteo') && r.level===sLv) show=true;
+      if(r.kind==='lf' && sVar==='REC4' && r.level==='L4') show=true;
+    }
+    r.mesh.visible=!!(show && S.anat);
+  });
+  REG.forEach(r=>{
+    if(r.path||r.detail||r.key!=='canal') return;
+    if(wantS && S.anat && sVar && sVar!=='REC4'){ r.mesh.material.transparent=true; r.mesh.material.opacity=.32; }
+    else { r.mesh.material.opacity=.9; r.mesh.material.transparent=true; }
+  });
+}
+
 /* ============================== ZONES ============================== */
 const ray=new THREE.Raycaster();
 scene.updateMatrixWorld(true);
@@ -434,7 +505,9 @@ function setMarkers(){markGroup.clear();labelsEl.innerHTML='';LBL=[];
 let FOCUS=[];
 function setFocus(){FOCUS=[];const dxs=S.mode==='cmp'?S.cmp:(S.mode==='dx'?[S.dx]:[]);
   dxs.forEach(id=>{const d=DXM[id],vv=d.vars.find(x=>x.id===S.vars[id]);const es=effSide(d);
-    (vv.focus||[]).forEach(f=>REG.forEach(r=>{if(r.key===f&&(r.side==='C'||es==='B'||r.side===es))FOCUS.push(r);}));});
+    (vv.focus||[]).forEach(f=>REG.forEach(r=>{if(r.key===f&&(r.side==='C'||es==='B'||r.side===es)&&(!r.path||r.mesh.visible!==false))FOCUS.push(r);}));});
+  // Prefer pulsing pathology overlays when present
+  const pathFocus=FOCUS.filter(r=>r.path); if(pathFocus.length) FOCUS=pathFocus.concat(FOCUS.filter(r=>!r.path&&(r.key==='canal'||r.key.startsWith('root:'))));
   REG.forEach(r=>r.mesh.material.emissive.copy(r.base));}
 
 /* ============================== INJEKSI & SONOANATOMI ============================== */
@@ -780,16 +853,30 @@ function injHTML(d){const v=S.vars[d.id],list=procsFor(d.id,v);
   </div>`;}
 
 /* ============================== APPLY ============================== */
+function ensurePathAnat(){
+  const ids=pathDxIds();
+  if((ids.includes('facet')||ids.includes('stenosis')) && !S.anat && typeof setAnat==='function') setAnat(true);
+}
 function apply(){
   const list=[];
   if(S.mode==='dx'){const d=DXM[S.dx];zonesFor(d.id,S.vars[d.id],effSide(d)).forEach(z=>list.push({z,col:KCOL[z.k]}));}
   else if(S.mode==='cmp'){S.cmp.forEach((id,ix)=>{const d=DXM[id];zonesFor(id,S.vars[id],effSide(d)).forEach(z=>list.push({z,col:CMPCOL[ix]}));});}
-  pushZones(list);setMarkers();buildInj();setFocus();renderLegend();renderPanel();updateSideSeg();
+  ensurePathAnat();
+  pushZones(list);setMarkers();buildInj();applyPathology();setFocus();renderLegend();renderPanel();updateSideSeg();
 }
 function renderLegend(){const L=document.getElementById('legend');
   if(S.mode==='cmp'){L.innerHTML=S.cmp.map((id,i)=>`<div><i style="background:${CMPCOL[i]}"></i>${DXM[id].name}</div>`).join('')+'<div style="color:var(--mute)">garis bergerak = neuropatik</div>';}
   else if(S.mode==='tap'){L.innerHTML='<div><i style="background:#40c8ff"></i>Ketuk lokasi nyeri pasien</div>';}
-  else L.innerHTML=`<div><i style="background:${KCOL.p}"></i>Nyeri primer / lokal</div><div><i style="background:${KCOL.r}"></i>Nyeri rujukan (somatik)</div><div><i style="background:${KCOL.n}"></i>Neuropatik / radikular</div>`;}
+  else {
+    let h=`<div><i style="background:${KCOL.p}"></i>Nyeri primer / lokal</div><div><i style="background:${KCOL.r}"></i>Nyeri rujukan (somatik)</div><div><i style="background:${KCOL.n}"></i>Neuropatik / radikular</div>`;
+    const ids=pathDxIds();
+    if(ids.includes('facet')||ids.includes('stenosis')){
+      h+=`<div style="margin-top:4px;font-size:10.5px;color:var(--muted)">Patologi anatomi (lapisan Anatomi)</div>`;
+      if(ids.includes('facet')) h+=`<div><i style="background:#c47a4a"></i>Faset hipertrofik / arthropathy</div><div><i style="background:#d9c49a"></i>Osteofit</div>`;
+      if(ids.includes('stenosis')) h+=`<div><i style="background:#e85d4c"></i>Kanal menyempit (stenosis)</div><div><i style="background:#8a6540"></i>Lig. flavum menebal</div><div><i style="background:#f0a060"></i>Lateral recess</div>`;
+    }
+    L.innerHTML=h;
+  }}
 
 /* ============================== PANEL UI ============================== */
 const content=document.getElementById('content');
@@ -803,7 +890,9 @@ function varsHTML(d){if(d.vars.length<2)return '';return `<div class="vars">`+d.
 function cardHTML(d){const vv=d.vars.find(x=>x.id===S.vars[d.id]);const es=effSide(d);
   return `<div class="card"><h2>${d.name}${d.vars.length>1?' · '+vv.label:''}</h2>
   <span class="tag">${d.grp}</span><span class="tag">${es==='B'?'Bilateral / sentral':es==='R'?'Sisi kanan':'Sisi kiri'}</span>
+  ${d.pathViz?`<span class="tag" style="border-color:#c47a4a;color:#c47a4a">Patologi 3D</span>`:''}
   ${varsHTML(d)}
+  ${d.pathViz?`<h3>Visualisasi patologi lumbosakral</h3><p class="note">${d.pathViz}</p>${S.anat?'':'<p class="note">Lapisan <b>Anatomi</b> akan aktif otomatis untuk diagnosis ini.</p>'}`:''}
   <h3>Pain generator</h3><p>${d.gen}</p>
   <h3>Pola nyeri</h3><p>${d.pat}</p>${vv.note?`<p><b>${vv.label}:</b> ${vv.note}</p>`:''}
   <h3>Ciri klinis kunci</h3><ul>${d.feat.map(x=>`<li>${x}</li>`).join('')}</ul>

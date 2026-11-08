@@ -70,9 +70,10 @@ async function loadDetail(){ if(detailLoaded) return;
   }
   detailLoaded=true; }
 function syncAnat(){ anat.visible=S.anat; anatD.visible=S.anat&&S.detail;
-  REG.forEach(r=>{ if(!r.detail) r.mesh.visible=!(S.detail && DREPL.test(r.key) && !r.keep); }); }
-const SUBT={simple:'Versi sederhana: tubuh dan anatomi skematik. Tekan Anatomi untuk melihat generator nyeri; pola nyeri diwarnai di kulit.',
-  detail:'Versi detail: lapisan Anatomi memakai mesh BodyParts3D (vertebra T10–L5, diskus, sakrum, pelvis, femur, psoas, QL, erector, multifidus, gluteal, piriformis) dan saraf Z-Anatomy. Faset, radiks, n. cluneal, dan SIJ tetap skematik.'};
+  REG.forEach(r=>{ if(!r.detail && !r.path) r.mesh.visible=!(S.detail && DREPL.test(r.key) && !r.keep); });
+  if(typeof applyPathology==='function') applyPathology(); }
+const SUBT={simple:'Versi sederhana: tubuh dan anatomi skematik lumbosakral. Tekan Anatomi untuk generator nyeri; facet arthropathy & stenosis menampilkan morfologi patologi. Pola nyeri diwarnai di kulit.',
+  detail:'Versi detail: lapisan Anatomi memakai mesh BodyParts3D (vertebra T10–L5, diskus, sakrum, pelvis, femur, psoas, QL, erector, multifidus, gluteal, piriformis) dan saraf Z-Anatomy. Faset, radiks, n. cluneal, SIJ, serta overlay patologi (arthropathy/stenosis) tetap skematik.'};
 async function setDetail(on){
   S.detail=on; MI.press(document.querySelectorAll('#mode button'),b=>(b.dataset.m==='detail')===on);
   document.getElementById('sub').textContent=SUBT[on?'detail':'simple']; document.getElementById('about').textContent=SUBT[on?'detail':'simple'];
