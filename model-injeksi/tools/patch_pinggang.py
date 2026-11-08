@@ -72,8 +72,8 @@ async function loadDetail(){ if(detailLoaded) return;
 function syncAnat(){ anat.visible=S.anat; anatD.visible=S.anat&&S.detail;
   REG.forEach(r=>{ if(!r.detail && !r.path) r.mesh.visible=!(S.detail && DREPL.test(r.key) && !r.keep); });
   if(typeof applyPathology==='function') applyPathology(); }
-const SUBT={simple:'Versi sederhana: tubuh dan anatomi skematik lumbosakral. Tekan Anatomi untuk generator nyeri; facet arthropathy & stenosis menampilkan morfologi patologi. Pola nyeri diwarnai di kulit.',
-  detail:'Versi detail: lapisan Anatomi memakai mesh BodyParts3D (vertebra T10–L5, diskus, sakrum, pelvis, femur, psoas, QL, erector, multifidus, gluteal, piriformis) dan saraf Z-Anatomy. Faset, radiks, n. cluneal, SIJ, serta overlay patologi (arthropathy/stenosis) tetap skematik.'};
+const SUBT={simple:'Versi sederhana: spine lumbosakral interaktif. Chip Spine = fokus vertebra; Putar = auto-rotate; ketuk tulang = pilih level. HNP, facet arthropathy, dan stenosis punya morfologi 3D. Pola nyeri di kulit.',
+  detail:'Versi detail: mesh BodyParts3D + saraf Z-Anatomy. Overlay morfologi HNP / facet OA / stenosis tetap skematik di atas tulang. Gunakan mode Spine untuk melihat patologi lebih jelas.'};
 async function setDetail(on){
   S.detail=on; MI.press(document.querySelectorAll('#mode button'),b=>(b.dataset.m==='detail')===on);
   document.getElementById('sub').textContent=SUBT[on?'detail':'simple']; document.getElementById('about').textContent=SUBT[on?'detail':'simple'];

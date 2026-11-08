@@ -73,7 +73,7 @@ ol.steps{margin:4px 0;padding-left:20px;line-height:1.5;font-size:13.5px}
 <div class="mi-app" id="app">
   <header class="mi-head">
     <div class="mi-title">
-      <div class="mi-eyebrow">Lumbosakral · facet arthropathy · stenosis · pola nyeri · injeksi USG</div>
+      <div class="mi-eyebrow">Spine lumbosakral interaktif · HNP · facet arthropathy · stenosis · pola nyeri</div>
       <h1>Peta Nyeri Pinggang 3D</h1>
       <p class="mi-sub" id="sub"></p>
     </div>
@@ -103,6 +103,8 @@ ol.steps{margin:4px 0;padding-left:20px;line-height:1.5;font-size:13.5px}
     <div class="mi-row">
       <span class="mi-lab">Lapisan</span>
       <button type="button" class="mi-chip" id="btnAnat">Anatomi</button>
+      <button type="button" class="mi-chip" id="btnSpine" title="Fokus kolom vertebra lumbosakral">Spine</button>
+      <button type="button" class="mi-chip" id="btnSpin" title="Putar otomatis model">Putar</button>
       <button type="button" class="mi-chip" id="btnInj">Injeksi</button>
       <button type="button" class="mi-chip" id="btnLab">Landmark</button>
       <span id="opWrap">Kulit <input id="op" type="range" min="0.08" max="1" step="0.01" value="0.3" aria-label="Transparansi kulit"></span>
@@ -126,11 +128,12 @@ ol.steps{margin:4px 0;padding-left:20px;line-height:1.5;font-size:13.5px}
         <button type="button" data-v="L">Smp</button>
         <button type="button" data-v="A">Dpn</button>
         <button type="button" data-v="Z">Zoom</button>
+        <button type="button" data-v="S">Spine</button>
       </div>
       <div id="orient"></div>
       <div class="mi-msg" id="loading" hidden>Memuat mesh detail…</div>
       <div class="mi-msg" id="err" hidden></div>
-      <div class="mi-hint">Seret untuk putar · cubit/scroll untuk zoom · mode Ketuk area: ketuk lokasi nyeri</div>
+      <div class="mi-hint">Seret untuk putar · scroll zoom · Spine: fokus vertebra · ketuk tulang untuk pilih level · Putar: auto-rotate</div>
     </div>
 
     <aside class="mi-panel" id="panel" aria-label="Diagnosis, injeksi dan sumber">
