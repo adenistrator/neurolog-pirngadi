@@ -31,10 +31,11 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+html,body{height:100%;height:100dvh}
+html{overscroll-behavior:none}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:contain;padding-bottom:env(safe-area-inset-bottom,0px)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
-button{font:inherit;color:inherit}
+button{font:inherit;color:inherit;touch-action:manipulation}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---------- app frame ---------- */
@@ -65,12 +66,15 @@ button{font:inherit;color:inherit}
 .mi-seg.lg button{min-height:40px;padding:0 16px;font-size:14px}
 .mi-btn{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .mi-btn.ghost{background:transparent;color:var(--accent)}
-@media (pointer:coarse){.mi-chip,.mi-seg button{min-height:var(--tap)}}
+@media (pointer:coarse){
+  .mi-chip,.mi-seg button,.mi-views button,.mi-nav a{min-height:var(--tap)}
+  .mi-chip{padding:0 14px;font-size:14px}
+}
 
 /* ---------- main ---------- */
 .mi-main{flex:1;display:flex;flex-direction:column;min-height:0}
-.mi-stage{position:relative;height:clamp(320px,56svh,640px);flex:none;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,var(--stage-hi),var(--stage-lo) 78%);touch-action:none}
-.mi-stage canvas{display:block;touch-action:none}
+.mi-stage{position:relative;height:clamp(340px,58svh,720px);flex:none;overflow:hidden;background:radial-gradient(ellipse at 50% 38%,var(--stage-hi),var(--stage-lo) 78%);touch-action:none;-webkit-user-select:none;user-select:none}
+.mi-stage canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
 .mi-labels{position:absolute;inset:0;pointer-events:none;z-index:1}
 .mi-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--muted);font-size:14px;pointer-events:none;z-index:3}
 .mi-hint{position:absolute;left:max(10px,env(safe-area-inset-left,0px));right:10px;bottom:8px;font-size:11.5px;color:var(--muted);pointer-events:none;z-index:2}
@@ -195,13 +199,33 @@ table.mi-t th{font:600 10.5px var(--f-mono);letter-spacing:.08em;text-transform:
   .mi-title h1{font-size:22px}
   .mi-head .mi-sub{display:none}
   .mi-head-ctl{width:100%;justify-content:space-between}
-  .mi-bar{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;padding-block:4px}
+  .mi-bar{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;padding-block:4px;-webkit-overflow-scrolling:touch}
   .mi-bar::-webkit-scrollbar{display:none}
   .mi-row{overflow:visible;flex:none}
   .mi-lab{min-width:0}
-  .mi-legend{max-width:52vw}
+  .mi-legend{max-width:min(200px,48vw);font-size:11px}
+  .mi-stage{height:clamp(360px,62svh,720px)}
+  .mi-views button{min-width:48px;min-height:44px}
+  .mi-panel-in{padding-bottom:calc(28px + env(safe-area-inset-bottom,0px))}
+  .mi-hint{font-size:12px;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));max-width:none;text-align:center}
 }
+/* iPad portrait: taller stage, still stacked panel */
+@media (min-width:700px) and (max-width:899px){
+  .mi-stage{height:clamp(420px,64svh,780px)}
+  .mi-panel-in{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+}
+/* iPad landscape / desktop already use side rail at 900px */
 .mi-about{font-size:13.5px;color:var(--muted);margin:0}
 @media (min-width:700px){.mi-about{display:none}}
 .mi-msg[hidden],.mi-app [hidden]{display:none!important}
 .mi-hint{right:auto;max-width:calc(100% - 20px);background:color-mix(in srgb,var(--surface) 70%,transparent);padding:2px 6px;border-radius:6px}
+
+/* sticky mobile morph dock (used by pinggang) */
+.mi-dock{display:none}
+@media (max-width:899px){
+  .mi-dock{display:flex;position:sticky;bottom:0;z-index:15;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;
+    padding:10px max(12px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px));
+    background:color-mix(in srgb,var(--surface) 92%,transparent);border-top:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .mi-dock .mi-chip{flex:1 1 auto;justify-content:center;min-width:72px;min-height:48px;font-size:15px}
+  .mi-dock .mi-chip.on,.mi-dock .mi-chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+}

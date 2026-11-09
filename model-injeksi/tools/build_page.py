@@ -5,6 +5,9 @@ import sys, base64, pathlib
 src, out, *pairs = sys.argv[1:]
 root = pathlib.Path(__file__).resolve().parent.parent
 html = pathlib.Path(src).read_text()
+# Ensure iPhone/iPad Safari gets a proper viewport even when the page is opened standalone.
+if 'name="viewport"' not in html:
+    html = '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">\n' + html
 html = html.replace('/*@SHELL@*/', (root/'shared/shell.css').read_text()).replace('/*@SHELLJS@*/', (root/'shared/shell.js').read_text())
 for p in pairs:
     k, f = p.split('=', 1); f = pathlib.Path(f)
