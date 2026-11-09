@@ -72,8 +72,8 @@ async function loadDetail(){ if(detailLoaded) return;
 function syncAnat(){ anat.visible=S.anat; anatD.visible=S.anat&&S.detail;
   REG.forEach(r=>{ if(!r.detail && !r.path) r.mesh.visible=!(S.detail && DREPL.test(r.key) && !r.keep); });
   if(typeof applyPathology==='function') applyPathology(); }
-const SUBT={simple:'Versi sederhana: spine lumbosakral interaktif. Chip Spine = fokus vertebra; Putar = auto-rotate; ketuk tulang = pilih level. HNP, facet arthropathy, dan stenosis punya morfologi 3D. Pola nyeri di kulit.',
-  detail:'Versi detail: mesh BodyParts3D + saraf Z-Anatomy. Overlay morfologi HNP / facet OA / stenosis tetap skematik di atas tulang. Gunakan mode Spine untuk melihat patologi lebih jelas.'};
+const SUBT={simple:'Di ponsel/tablet: satu jari putar, dua jari zoom. Tombol bawah (Facet / HNP / Stenosis / Putar) untuk memilih. Mode Spine menampilkan bentuk tulang belakang.',
+  detail:'Mesh BodyParts3D + saraf Z-Anatomy. Di iPhone/iPad tetap bisa diputar dengan jari; overlay HNP / facet OA / stenosis skematik.'};
 async function setDetail(on){
   S.detail=on; MI.press(document.querySelectorAll('#mode button'),b=>(b.dataset.m==='detail')===on);
   document.getElementById('sub').textContent=SUBT[on?'detail':'simple']; document.getElementById('about').textContent=SUBT[on?'detail':'simple'];

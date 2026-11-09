@@ -249,6 +249,13 @@ const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true; controls.dampingFactor=0.08; controls.minDistance=1.2; controls.maxDistance=45;
 controls.target.set(0,7,0); camera.position.set(0,8.5,-22);
 controls.autoRotate=false; controls.autoRotateSpeed=1.35;
+// iPhone / iPad: satu jari putar, dua jari zoom; pan dimatikan biar tidak mudah "nyasar"
+const _coarse=(typeof MI!=='undefined'&&MI.coarse)||matchMedia('(pointer: coarse)').matches||('ontouchstart' in window);
+controls.enablePan=!_coarse;
+controls.rotateSpeed=_coarse?0.9:1;
+controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
+renderer.domElement.style.touchAction='none';
+try{ renderer.domElement.style.webkitUserSelect='none'; }catch(e){}
 
 scene.add(new THREE.HemisphereLight(0xdfe9ff,0x7a6a70,0.95));
 const key=new THREE.DirectionalLight(0xffffff,1.25); key.position.set(-7,16,-12); scene.add(key);
@@ -553,8 +560,8 @@ async function loadDetail(){ if(detailLoaded) return;
 function syncAnat(){ anat.visible=S.anat; anatD.visible=S.anat&&S.detail;
   REG.forEach(r=>{ if(!r.detail && !r.path) r.mesh.visible=!(S.detail && DREPL.test(r.key) && !r.keep); });
   if(typeof applyPathology==='function') applyPathology(); }
-const SUBT={simple:'Versi sederhana: spine lumbosakral interaktif. Chip Spine = fokus vertebra; Putar = auto-rotate; ketuk tulang = pilih level. HNP, facet arthropathy, dan stenosis punya morfologi 3D. Pola nyeri di kulit.',
-  detail:'Versi detail: mesh BodyParts3D + saraf Z-Anatomy. Overlay morfologi HNP / facet OA / stenosis tetap skematik di atas tulang. Gunakan mode Spine untuk melihat patologi lebih jelas.'};
+const SUBT={simple:'Di ponsel/tablet: satu jari putar, dua jari zoom. Tombol bawah (Facet / HNP / Stenosis / Putar) untuk memilih. Mode Spine menampilkan bentuk tulang belakang.',
+  detail:'Mesh BodyParts3D + saraf Z-Anatomy. Di iPhone/iPad tetap bisa diputar dengan jari; overlay HNP / facet OA / stenosis skematik.'};
 async function setDetail(on){
   S.detail=on; MI.press(document.querySelectorAll('#mode button'),b=>(b.dataset.m==='detail')===on);
   document.getElementById('sub').textContent=SUBT[on?'detail':'simple']; document.getElementById('about').textContent=SUBT[on?'detail':'simple'];
@@ -969,6 +976,7 @@ function apply(){
   }
   ensurePathAnat();
   pushZones(list);setMarkers();buildInj();applyPathology();setFocus();renderLegend();renderPanel();updateSideSeg();
+  if(typeof syncDock==='function') syncDock();
 }
 function renderLegend(){const L=document.getElementById('legend');
   if(S.mode==='cmp'){L.innerHTML=S.cmp.map((id,i)=>`<div><i style="background:${CMPCOL[i]}"></i>${DXM[id].name}</div>`).join('')+'<div style="color:var(--mute)">garis bergerak = neuropatik</div>';}
@@ -1050,7 +1058,7 @@ content.addEventListener('click',e=>{
   const c=e.target.closest('[data-dx]');if(c){const id=c.dataset.dx;
     if(S.mode==='cmp'){const i=S.cmp.indexOf(id);if(i>=0)S.cmp.splice(i,1);else{if(S.cmp.length>=3)S.cmp.shift();S.cmp.push(id);}}
     else { S.dx=id; if(c.dataset.spine==='1'||SPINE_DX.has(id)){ if(typeof setSpine==='function') setSpine(true); else S.spine=true; } }
-    apply(); return;}
+    apply(); if(typeof MI!=='undefined') MI.toStage(); return;}
   const pb=e.target.closest('[data-proc]');if(pb){S.proc[pb.dataset.key]=pb.dataset.proc;S.inj=true;btnInj.classList.add('on');if(!S.anat)setAnat(true);apply();setTimeout(viewProbe,30);return;}
   if(e.target.closest('[data-viewprobe]')){if(!S.inj){S.inj=true;btnInj.classList.add('on');apply();}setTimeout(viewProbe,30);return;}
   if(e.target.closest('[data-sonolab]')){S.sonoLab=!S.sonoLab;renderPanel();return;}
@@ -1081,8 +1089,20 @@ function setSpine(on){
   renderLegend(); renderPanel();
 }
 if(btnSpine) btnSpine.onclick=()=>setSpine(!S.spine);
-function setSpin(on){S.spin=!!on; controls.autoRotate=S.spin; if(btnSpin) btnSpin.classList.toggle('on',S.spin);}
+function setSpin(on){S.spin=!!on; controls.autoRotate=S.spin; if(btnSpin) btnSpin.classList.toggle('on',S.spin); syncDock();}
 if(btnSpin) btnSpin.onclick=()=>setSpin(!S.spin);
+/* Mobile / iPad dock: tombol besar di bawah layar */
+const dock=document.getElementById('mobileDock'), dockSpin=document.getElementById('dockSpin');
+function syncDock(){
+  if(!dock) return;
+  dock.querySelectorAll('[data-dock]').forEach(b=>{ const on=S.dx===b.dataset.dock; b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
+  if(dockSpin){ dockSpin.classList.toggle('on',!!S.spin); dockSpin.setAttribute('aria-pressed',String(!!S.spin)); }
+}
+if(dock) dock.addEventListener('click',e=>{
+  const b=e.target.closest('[data-dock]');
+  if(b){ S.mode='dx'; S.dx=b.dataset.dock; setModeSeg(); if(typeof setSpine==='function') setSpine(true); apply(); if(typeof MI!=='undefined') MI.toStage(); return; }
+  if(e.target.closest('#dockSpin')) setSpin(!S.spin);
+});
 const btnInj=document.getElementById('btnInj');btnInj.onclick=()=>{S.inj=!S.inj;btnInj.classList.toggle('on',S.inj);if(S.inj&&S.mode!=='dx'){S.mode='dx';setModeSeg();}apply();};
 op.oninput=()=>{S.op=+op.value;if(S.anat&&!S.spine)skinMat.opacity=S.op;};
 btnLab.onclick=()=>{S.labels=!S.labels;btnLab.classList.toggle('on',S.labels);setMarkers();};
@@ -1142,8 +1162,9 @@ function regionName(p,n){const sd=p.x<-0.05?'kanan':p.x>0.05?'kiri':'midline';
   return r+' · '+sd;}
 
 /* ============================== LOOP ============================== */
-function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(w<2||h<2)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 new ResizeObserver(resize).observe(stage);
+if(typeof MI!=='undefined'&&MI.onViewport) MI.onViewport(resize);
 const tmp=V(0,0,0),cdir=V(0,0,0);
 function orient(){camera.getWorldDirection(cdir);let t;
   if(Math.abs(cdir.z)>Math.abs(cdir.x)) t=cdir.z>0?'Tampak belakang · kanan pasien = kanan layar':'Tampak depan · kanan pasien = kiri layar';
